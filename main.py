@@ -1,4 +1,8 @@
-from fastapi import FastAPI, UploadFile, File, Form
+from pathlib import Path
+
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 import fitz
 import anthropic
 import os
@@ -10,11 +14,25 @@ import re
 
 load_dotenv()
 
+BASE_DIR = Path(__file__).resolve().parent
+
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 CLAUDE_API_KEY = os.getenv("CLAUDE_API_KEY")
 client = anthropic.Anthropic(api_key=CLAUDE_API_KEY)
-print("API KEY:", CLAUDE_API_KEY)
+
+
+@app.get("/")
+async def serve_index():
+    return FileResponse(BASE_DIR / "index.html")
 
 
 
@@ -75,7 +93,19 @@ async def generate(
     num_q: int = Form(...)
 ):
     content = await file.read()
-    text = extract_text(content)
+    try:
+        text = extract_text(content)
+    except fitz.FileDataError:
+        raise HTTPException(
+            status_code=400,
+            detail="Could not read that file as a PDF. Upload a real PDF (not a Word/image file renamed to .pdf).",
+        )
+
+    if not text.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="No text found in the PDF. Try a different file or one with selectable text (not a scanned image without OCR).",
+        )
 
     selected_content = get_random_chunks(text)
 
@@ -113,7 +143,12 @@ FORMAT:
 [
   {{
     "question": "string",
-    "options": ["A", "B", "C", "D"],
+    "options": {{
+      "A": "option text",
+      "B": "option text",
+      "C": "option text",
+      "D": "option text"
+    }},
     "answer": "A",
     "explanation": "string"
   }}

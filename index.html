@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Prepzo UI</title>
+  <style>
+    body {
+      font-family: Arial;
+      padding: 30px;
+      background: #f5f5f5;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      margin-bottom: 15px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    .output {
+      margin-top: 20px;
+      padding: 15px;
+      background: #fafafa;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Prepzo Question Generator</h2>
+
+  <!-- Upload (PDF — backend extracts text with PyMuPDF) -->
+  <input type="file" id="fileInput" accept=".pdf,application/pdf" />
+
+  <!-- Question Type -->
+  <select id="qType">
+    <option value="mcq">MCQ</option>
+    <option value="short">Short Answer</option>
+    <option value="long">Long Answer</option>
+  </select>
+
+  <!-- Difficulty -->
+  <select id="difficulty">
+    <option value="easy">Easy</option>
+    <option value="medium">Medium</option>
+    <option value="hard">Hard</option>
+  </select>
+
+  <!-- Number of Questions -->
+  <input type="number" id="numQs" min="1" max="50" value="5" />
+
+  <!-- Generate Button (type=button avoids accidental form submit) -->
+  <button type="button" id="generateBtn">Generate</button>
+
+  <!-- Output -->
+  <div class="output" id="outputBox">
+    Your questions will appear here...
+  </div>
+</div>
+
+<script>
+  /** Backend URL: relative only works when this page is opened from uvicorn (port 8000). */
+  function getApiBase() {
+    if (window.location.protocol === 'file:') {
+      return 'http://127.0.0.1:8000';
+    }
+    var port = window.location.port;
+    if (port && port !== '8000') {
+      return (
+        window.location.protocol + '//' + window.location.hostname + ':8000'
+      );
+    }
+    return '';
+  }
+
+  async function generateQuestions() {
+    var fileInput = document.getElementById('fileInput');
+    var file = fileInput.files[0];
+    var outputBox = document.getElementById('outputBox');
+
+    if (!file) {
+      outputBox.textContent = 'Please choose a PDF file to upload.';
+      return;
+    }
+
+    var numRaw = document.getElementById('numQs').value;
+    var numQ = parseInt(numRaw, 10);
+    if (!numRaw || isNaN(numQ) || numQ < 1) {
+      outputBox.textContent = 'Enter a valid number of questions (1 or more).';
+      return;
+    }
+
+    var formData = new FormData();
+    formData.append('file', file);
+    formData.append('difficulty', document.getElementById('difficulty').value);
+    formData.append('q_type', document.getElementById('qType').value);
+    formData.append('num_q', String(numQ));
+
+    var base = getApiBase();
+    var url = base ? base.replace(/\/$/, '') + '/generate' : '/generate';
+
+    outputBox.textContent = 'Generating…';
+
+    try {
+      var res = await fetch(url, {
+        method: 'POST',
+        body: formData,
+      });
+      var text = await res.text();
+      var data;
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (parseErr) {
+        outputBox.textContent =
+          'Server returned non-JSON (' +
+          res.status +
+          '). Is uvicorn running on port 8000?\n\n' +
+          text.slice(0, 800);
+        return;
+      }
+
+      if (!res.ok) {
+        var detail = data.detail;
+        var msg =
+          typeof detail === 'string'
+            ? detail
+            : Array.isArray(detail)
+              ? detail
+                  .map(function (d) {
+                    return d.msg || JSON.stringify(d);
+                  })
+                  .join('\n')
+              : JSON.stringify(data);
+        outputBox.textContent = 'Request failed (' + res.status + '):\n' + msg;
+        return;
+      }
+
+      if (data.error) {
+        outputBox.textContent =
+          data.error + (data.raw ? '\n\n--- raw ---\n' + data.raw : '');
+        return;
+      }
+
+      outputBox.textContent = JSON.stringify(data.questions, null, 2);
+    } catch (err) {
+      outputBox.textContent =
+        'Network error calling ' +
+        url +
+        '. Start the API with: uvicorn main:app --reload (in the Prepzo folder).\n\n' +
+        err.message;
+    }
+  }
+
+  document.getElementById('generateBtn').addEventListener('click', generateQuestions);
+</script>
+
+</body>
+</html>
