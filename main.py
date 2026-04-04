@@ -51,34 +51,81 @@ def get_random_chunks(text, chunk_size=800, num_chunks=3):
     return " ".join(random.sample(chunks, min(num_chunks, len(chunks))))
 
 
-system_prompt = """
-You are a strict JSON generator.
-
-TASK:
-Generate {num_q} {difficulty} level {q_type} questions from the content.
-
-IMPORTANT RULES:
-- Output ONLY valid JSON
-- DO NOT include markdown
-- DO NOT include headings
-- DO NOT include explanation outside JSON
-- DO NOT include backticks
-
-FORMAT EXACTLY LIKE THIS:
-
-[
-  {{
+# JSON shape examples (plain strings; injected into the prompt — not f-string literals, so braces stay literal).
+FORMAT_EXAMPLES = {
+    "mcq": """[
+  {
     "question": "string",
-    "options": ["A", "B", "C", "D"],
+    "options": {
+      "A": "option text",
+      "B": "option text",
+      "C": "option text",
+      "D": "option text"
+    },
     "answer": "A",
     "explanation": "string"
-  }}
-]
+  }
+]""",
+    "short": """[
+  {
+    "question": "string",
+    "answer": "string",
+    "explanation": "string"
+  }
+]""",
+    "long": """[
+  {
+    "question": "string",
+    "answer": "string",
+    "explanation": "string"
+  }
+]""",
+    "conceptual": """[
+  {
+    "question": "string",
+    "answer": "string",
+    "explanation": "string"
+  }
+]""",
+    "mixed": """[
+  {
+    "question_type": "mcq",
+    "question": "string",
+    "options": {
+      "A": "option text",
+      "B": "option text",
+      "C": "option text",
+      "D": "option text"
+    },
+    "answer": "A",
+    "explanation": "string"
+  },
+  {
+    "question_type": "short",
+    "question": "string",
+    "answer": "string",
+    "explanation": "string"
+  }
+]""",
+}
 
-CONTENT:
-{selected_content}
-"""
 
+TYPE_RULES = {
+    "mcq": "Multiple choice ONLY. Each item MUST have options A–D and answer MUST be a single letter A/B/C/D. Do NOT output short-answer-only objects.",
+    "short": "Short answer ONLY. Each item MUST have question, answer (1–3 sentences), explanation. Do NOT include options, A/B/C/D, or MCQ fields.",
+    "long": "Long answer ONLY. Each item MUST have question, answer (detailed paragraph(s)), explanation. Do NOT include options or MCQ fields.",
+    "conceptual": "Conceptual (why/how) ONLY. Same JSON shape as short: question, answer (2–5 sentences), explanation. No MCQ options.",
+    "mixed": "Include a MIX of mcq and short items. Each object MUST have question_type (\"mcq\" or \"short\"). MCQ items: options + letter answer. Short items: no options, only answer text.",
+}
+
+
+MAX_TOKENS_FOR_TYPE = {
+    "mcq": 4096,
+    "short": 4096,
+    "long": 8192,
+    "conceptual": 4096,
+    "mixed": 8192,
+}
 
 
 # ---------- 1. GENERATE MCQs ----------
@@ -117,42 +164,37 @@ async def generate(
     }
 
     type_map = {
-        "mcq": "multiple choice with 4 options + answer + explanation",
-        "short": "short answer (1-3 lines)",
-        "long": "detailed answers",
-        "conceptual": "why/how understanding",
-        "mixed": "mix of all types"
+        "mcq": "multiple choice with 4 options (A–D), letter answer, explanation",
+        "short": "short answer (1–3 sentences per answer), no choices",
+        "long": "long-form paragraph answers, no choices",
+        "conceptual": "why/how conceptual answers (paragraph), no choices",
+        "mixed": "mix of MCQ and short-answer style items as in FORMAT",
     }
+
+    format_example = FORMAT_EXAMPLES[q_type]
+    type_rule = TYPE_RULES[q_type]
+    max_out = MAX_TOKENS_FOR_TYPE[q_type]
 
     prompt = f"""
 You are a strict JSON generator.
 
-Generate {num_q} questions.
+Generate exactly {num_q} questions based ONLY on the CONTENT below.
 
-Difficulty: {difficulty_map[difficulty]}
-Type: {type_map[q_type]}
+User-selected question type: {q_type}
+Difficulty focus: {difficulty_map[difficulty]}
+Style: {type_map[q_type]}
+
+CRITICAL — follow this type exactly:
+{type_rule}
+If the type is not "mcq", you MUST NOT output "options" or A/B/C/D choices.
 
 RULES:
-- Return ONLY valid JSON
-- No markdown
-- No headings
-- No extra text
+- Return ONLY valid JSON (one array)
+- No markdown, no headings, no text outside the JSON array
 
-FORMAT:
+FORMAT (match this structure exactly for type "{q_type}"):
 
-[
-  {{
-    "question": "string",
-    "options": {{
-      "A": "option text",
-      "B": "option text",
-      "C": "option text",
-      "D": "option text"
-    }},
-    "answer": "A",
-    "explanation": "string"
-  }}
-]
+{format_example}
 
 CONTENT:
 {selected_content}
@@ -160,7 +202,7 @@ CONTENT:
 
     response = client.messages.create(
         model="claude-haiku-4-5-20251001",
-        max_tokens=1200,
+        max_tokens=max_out,
         messages=[{
             "role": "user",
             "content": prompt
