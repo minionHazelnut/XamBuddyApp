@@ -87,9 +87,7 @@
     }
     var port = window.location.port;
     if (port && port !== '8000') {
-      return (
-        window.location.protocol + '//' + window.location.hostname + ':8000'
-      );
+      return window.location.protocol + '//127.0.0.1:8000';
     }
     return '';
   }
@@ -162,7 +160,15 @@
         return;
       }
 
-      outputBox.textContent = JSON.stringify(data.questions, null, 2);
+      // ✅ Proper formatted display
+        outputBox.textContent = '';
+        data.questions.forEach(function (q, index) {
+          outputBox.textContent += (index + 1) + '. ' + q.question + '\n';
+          for (var key in q.options) {
+            outputBox.textContent += key + '. ' + q.options[key] + '\n';
+          }
+          outputBox.textContent += '\n';
+        });
     } catch (err) {
       outputBox.textContent =
         'Network error calling ' +
