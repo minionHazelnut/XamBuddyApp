@@ -208,7 +208,15 @@ def _db_question_type_filter(q_type: str):
     return "question_type = %s", [q_type]
 
 
-def get_questions(q_type, difficulty, subject, exam, chapter: str, limit):
+def get_questions(
+    q_type,
+    difficulty,
+    subject,
+    exam,
+    chapter: str,
+    limit,
+    order: Literal["newest", "random"] = "newest",
+):
     """
     Fetch up to `limit` questions matching filters. Returns list of dicts in API shape.
     For q_type 'mixed', matches rows with question_type mcq or short.
@@ -217,6 +225,7 @@ def get_questions(q_type, difficulty, subject, exam, chapter: str, limit):
         return []
 
     diff_db = _difficulty_for_db(difficulty)
+    order_sql = "ORDER BY RANDOM()" if order == "random" else "ORDER BY created_at DESC"
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
@@ -231,7 +240,7 @@ def get_questions(q_type, difficulty, subject, exam, chapter: str, limit):
                 FROM questions
                 WHERE exam = %s AND subject = %s AND {chapter_clause}
                   AND difficulty = %s AND ({type_sql})
-                ORDER BY created_at DESC
+                {order_sql}
                 LIMIT %s
                 """,
                 params,
@@ -249,6 +258,11 @@ async def serve_index():
     return FileResponse(BASE_DIR / "index.html")
 
 
+@app.get("/student")
+async def serve_student():
+    return FileResponse(BASE_DIR / "student.html")
+
+
 @app.get("/retrieve")
 async def retrieve_questions(
     exam: str = Query(..., min_length=1),
@@ -257,13 +271,15 @@ async def retrieve_questions(
     q_type: Literal["mcq", "short", "long", "conceptual", "mixed"] = Query(...),
     difficulty: Literal["easy", "medium", "hard", "mixed"] = Query(...),
     limit: int = Query(10, ge=1, le=100),
+    shuffle: bool = Query(False),
 ):
     """Read-only: fetch stored questions matching filters (does not call AI or /generate)."""
     ch = chapter.strip()
     if not ch:
         raise HTTPException(status_code=400, detail="chapter is required.")
     try:
-        questions = get_questions(q_type, difficulty, subject, exam, ch, limit)
+        order: Literal["newest", "random"] = "random" if shuffle else "newest"
+        questions = get_questions(q_type, difficulty, subject, exam, ch, limit, order=order)
     except (OperationalError, DatabaseError) as e:
         logger.exception("Database error on /retrieve")
         raise HTTPException(

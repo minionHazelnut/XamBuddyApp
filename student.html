@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>XamBuddy — Practice</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      margin: 0;
+      padding: 16px;
+      background: linear-gradient(160deg, #e8f4fc 0%, #f5f0fa 100%);
+      min-height: 100vh;
+      color: #1a1a1a;
+    }
+    .wrap {
+      max-width: 640px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 1.5rem;
+      margin: 0 0 8px 0;
+      text-align: center;
+    }
+    .sub {
+      text-align: center;
+      color: #555;
+      font-size: 0.9rem;
+      margin-bottom: 20px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      margin-bottom: 16px;
+    }
+    .hidden { display: none !important; }
+    label {
+      display: block;
+      font-weight: 600;
+      font-size: 0.85rem;
+      margin-top: 12px;
+      margin-bottom: 4px;
+    }
+    label:first-child { margin-top: 0; }
+    select, button, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+    textarea { min-height: 88px; resize: vertical; }
+    .btn {
+      margin-top: 14px;
+      cursor: pointer;
+      font-weight: 600;
+      border: none;
+    }
+    .btn-primary { background: #0d6efd; color: #fff; }
+    .btn-primary:hover { background: #0b5ed7; }
+    .btn-secondary { background: #6c757d; color: #fff; margin-top: 8px; }
+    .btn-secondary:hover { background: #5c636a; }
+    .btn-success { background: #198754; color: #fff; }
+    .btn-success:hover { background: #157347; }
+    .btn-outline {
+      background: #fff;
+      color: #0d6efd;
+      border: 2px solid #0d6efd;
+      margin-top: 8px;
+    }
+    .mode-row {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .mode-btn {
+      text-align: left;
+      padding: 16px;
+      border-radius: 10px;
+      border: 2px solid #dee2e6;
+      background: #fff;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .mode-btn:hover {
+      border-color: #0d6efd;
+      background: #f8f9ff;
+    }
+    .mode-btn strong { display: block; font-size: 1.05rem; margin-bottom: 4px; }
+    .mode-btn span { color: #666; font-size: 0.88rem; }
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .toolbar .btn { flex: 1; min-width: 120px; margin-top: 0; }
+    .q-meta { font-size: 0.8rem; color: #666; margin-bottom: 12px; }
+    .q-text { font-size: 1.05rem; line-height: 1.45; margin-bottom: 16px; }
+    .options label.opt {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 12px;
+      margin-top: 8px;
+      border: 2px solid #e9ecef;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: normal;
+    }
+    .options label.opt:hover { border-color: #adb5bd; }
+    .options input { width: auto; margin-top: 3px; }
+    .options label.opt.correct-pick { border-color: #198754; background: #d1e7dd; }
+    .options label.opt.wrong-pick { border-color: #dc3545; background: #f8d7da; }
+    .options label.opt.reveal-correct { border-color: #198754; background: #e8f5e9; }
+    .feedback {
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 8px;
+      font-weight: 600;
+    }
+    .feedback.ok { background: #d1e7dd; color: #0f5132; }
+    .feedback.bad { background: #f8d7da; color: #842029; }
+    .explain-box {
+      margin-top: 12px;
+      padding: 12px;
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+    .footer-links {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 0.85rem;
+    }
+    .footer-links a { color: #0d6efd; }
+    .quiz-block {
+      border: 1px solid #dee2e6;
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+    .quiz-block h3 { margin: 0 0 10px 0; font-size: 1rem; }
+    .score-big {
+      font-size: 2rem;
+      font-weight: 800;
+      text-align: center;
+      margin: 16px 0;
+    }
+    .result-item { margin: 8px 0; padding: 8px; border-radius: 6px; font-size: 0.9rem; }
+    .result-item.yes { background: #d1e7dd; }
+    .result-item.no { background: #f8d7da; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>XamBuddy</h1>
+    <p class="sub">Student practice — choose a mode to begin</p>
+
+    <!-- Home: pick mode -->
+    <div id="screenHome" class="card">
+      <div class="mode-row">
+        <button type="button" class="mode-btn" id="pickStudy">
+          <strong>Chapter by chapter</strong>
+          <span>One question at a time. Submit each answer and see if you’re right, then move on.</span>
+        </button>
+        <button type="button" class="mode-btn" id="pickQuiz">
+          <strong>Quiz</strong>
+          <span>10 questions from this chapter. Answer all, then submit once to see your score.</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div id="screenFilters" class="card hidden">
+      <p class="q-meta" id="filterModeLabel"></p>
+      <label for="gradeSelect">Grade</label>
+      <select id="gradeSelect">
+        <option value="10th CBSE Board">Class 10 (CBSE)</option>
+        <option value="12th CBSE Board">Class 12 (CBSE)</option>
+      </select>
+      <label for="stuSubjectSelect">Subject</label>
+      <select id="stuSubjectSelect">
+        <option value="Psychology">Psychology</option>
+        <option value="Mathematics">Mathematics</option>
+        <option value="Physics">Physics</option>
+        <option value="Chemistry">Chemistry</option>
+        <option value="Biology">Biology</option>
+        <option value="English">English</option>
+        <option value="Hindi">Hindi</option>
+        <option value="History">History</option>
+        <option value="Geography">Geography</option>
+        <option value="Political Science">Political Science</option>
+        <option value="Economics">Economics</option>
+        <option value="Computer Science">Computer Science</option>
+      </select>
+      <label for="stuChapterSelect">Chapter</label>
+      <select id="stuChapterSelect"></select>
+      <label for="stuQType">Question type</label>
+      <select id="stuQType">
+        <option value="mcq">Multiple choice (MCQ)</option>
+        <option value="short">Short answer</option>
+        <option value="long">Long answer</option>
+      </select>
+      <label for="stuDifficulty">Difficulty</label>
+      <select id="stuDifficulty">
+        <option value="easy">Easy</option>
+        <option value="medium">Medium</option>
+        <option value="hard">Hard</option>
+      </select>
+      <div class="toolbar">
+        <button type="button" class="btn btn-secondary" id="filterBack">Back</button>
+        <button type="button" class="btn btn-primary" id="filterStart">Start</button>
+      </div>
+    </div>
+
+    <!-- Study: one question -->
+    <div id="screenStudy" class="card hidden">
+      <p class="q-meta" id="studyProgress"></p>
+      <div class="q-text" id="studyQuestionText"></div>
+      <div id="studyMcq" class="options hidden"></div>
+      <div id="studyWritten" class="hidden">
+        <label for="studyWrittenInput">Your answer</label>
+        <textarea id="studyWrittenInput" placeholder="Type your answer…"></textarea>
+      </div>
+      <button type="button" class="btn btn-primary" id="studySubmit">Submit answer</button>
+      <div id="studyFeedback" class="hidden"></div>
+      <div id="studyExplainWrap" class="hidden">
+        <button type="button" class="btn btn-outline" id="studyExplainBtn">Explain my answer</button>
+        <div id="studyExplainBox" class="explain-box hidden"></div>
+      </div>
+      <button type="button" class="btn btn-success hidden" id="studyNext">Next</button>
+    </div>
+
+    <!-- Quiz: all questions -->
+    <div id="screenQuiz" class="card hidden">
+      <p class="q-meta">Answer all questions, then submit once.</p>
+      <div id="quizQuestions"></div>
+      <div class="toolbar">
+        <button type="button" class="btn btn-secondary" id="quizBack">Back</button>
+        <button type="button" class="btn btn-success" id="quizSubmitAll">Submit quiz</button>
+      </div>
+    </div>
+
+    <!-- Quiz results -->
+    <div id="screenResults" class="card hidden">
+      <h2 style="margin-top:0;font-size:1.2rem;">Quiz results</h2>
+      <div class="score-big" id="scoreDisplay"></div>
+      <div id="resultDetails"></div>
+      <button type="button" class="btn btn-primary" id="resultsHome">Back to home</button>
+    </div>
+
+    <p class="footer-links"><a href="/">Admin / teachers</a></p>
+  </div>
+
+<script>
+(function () {
+  var state = {
+    mode: null,
+    questions: [],
+    index: 0,
+    studySubmitted: false,
+    studyCorrect: false,
+  };
+
+  function getApiBase() {
+    if (window.location.protocol === 'file:') return 'http://127.0.0.1:8000';
+    var port = window.location.port;
+    if (port && port !== '8000') return window.location.protocol + '//127.0.0.1:8000';
+    return '';
+  }
+
+  function show(id) {
+    ['screenHome', 'screenFilters', 'screenStudy', 'screenQuiz', 'screenResults'].forEach(function (s) {
+      document.getElementById(s).classList.add('hidden');
+    });
+    document.getElementById(id).classList.remove('hidden');
+  }
+
+  function fillChapterSelect() {
+    var root = window.CHAPTERS_BY_EXAM_SUBJECT || {};
+    var exam = document.getElementById('gradeSelect').value;
+    var subject = document.getElementById('stuSubjectSelect').value;
+    var sel = document.getElementById('stuChapterSelect');
+    var list = (root[exam] && root[exam][subject]) || [];
+    sel.innerHTML = '';
+    if (list.length === 0) {
+      var ph = document.createElement('option');
+      ph.value = '';
+      ph.textContent = 'No chapters configured';
+      sel.appendChild(ph);
+      return;
+    }
+    list.forEach(function (name) {
+      var o = document.createElement('option');
+      o.value = name;
+      o.textContent = name;
+      sel.appendChild(o);
+    });
+  }
+
+  function fetchQuestions(limit, shuffle, cb) {
+    var base = getApiBase().replace(/\/$/, '');
+    var params = new URLSearchParams({
+      exam: document.getElementById('gradeSelect').value,
+      subject: document.getElementById('stuSubjectSelect').value,
+      chapter: document.getElementById('stuChapterSelect').value.trim(),
+      q_type: document.getElementById('stuQType').value,
+      difficulty: document.getElementById('stuDifficulty').value,
+      limit: String(limit),
+      shuffle: shuffle ? 'true' : 'false',
+    });
+    var url = (base ? base : '') + '/retrieve?' + params.toString();
+    fetch(url)
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, status: r.status, body: j }; }); })
+      .then(function (res) {
+        if (!res.ok) {
+          var d = res.body.detail;
+          var msg =
+            typeof d === 'string'
+              ? d
+              : Array.isArray(d)
+                ? d.map(function (x) { return x.msg || JSON.stringify(x); }).join('; ')
+                : JSON.stringify(res.body);
+          cb(new Error(msg || 'Request failed'), null);
+          return;
+        }
+        cb(null, res.body.questions || []);
+      })
+      .catch(function (e) { cb(e, null); });
+  }
+
+  function normLetter(x) {
+    return String(x == null ? '' : x).trim().toUpperCase().charAt(0);
+  }
+
+  function normText(x) {
+    return String(x == null ? '' : x)
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, ' ');
+  }
+
+  function twoLineExplanation(text) {
+    var s = String(text || '').trim().replace(/\s+/g, ' ');
+    if (!s) return 'No explanation has been added for this question yet.';
+    var parts = s.split(/(?<=[.!?])\s+/).filter(Boolean);
+    var out = parts.slice(0, 2).join(' ');
+    if (out.length < 40 && parts.length > 2) out = parts.slice(0, 3).join(' ');
+    return out || s.slice(0, 220);
+  }
+
+  function isMcq(q) {
+    return q.options && typeof q.options === 'object' && Object.keys(q.options).length > 0;
+  }
+
+  function renderStudyQuestion() {
+    var qs = state.questions;
+    var i = state.index;
+    state.studySubmitted = false;
+    state.studyCorrect = false;
+    document.getElementById('studyFeedback').classList.add('hidden');
+    document.getElementById('studyFeedback').innerHTML = '';
+    document.getElementById('studyExplainWrap').classList.add('hidden');
+    document.getElementById('studyExplainBox').classList.add('hidden');
+    document.getElementById('studyExplainBox').textContent = '';
+    document.getElementById('studyNext').classList.add('hidden');
+    document.getElementById('studySubmit').classList.remove('hidden');
+    document.getElementById('studyWrittenInput').value = '';
+
+    if (i >= qs.length) {
+      show('screenFilters');
+      alert('You have finished all questions in this set.');
+      return;
+    }
+
+    var q = qs[i];
+    document.getElementById('studyProgress').textContent =
+      'Question ' + (i + 1) + ' of ' + qs.length;
+    document.getElementById('studyQuestionText').textContent = q.question;
+
+    var mcqEl = document.getElementById('studyMcq');
+    var writtenEl = document.getElementById('studyWritten');
+    if (isMcq(q)) {
+      mcqEl.classList.remove('hidden');
+      writtenEl.classList.add('hidden');
+      mcqEl.innerHTML = '';
+      var keys = Object.keys(q.options).sort();
+      keys.forEach(function (k) {
+        var id = 'mcq-' + i + '-' + k;
+        var lab = document.createElement('label');
+        lab.className = 'opt';
+        lab.setAttribute('for', id);
+        var inp = document.createElement('input');
+        inp.type = 'radio';
+        inp.name = 'studyMcq';
+        inp.value = k;
+        inp.id = id;
+        lab.appendChild(inp);
+        lab.appendChild(document.createTextNode(' ' + k + '. ' + q.options[k]));
+        mcqEl.appendChild(lab);
+      });
+    } else {
+      mcqEl.classList.add('hidden');
+      writtenEl.classList.remove('hidden');
+    }
+  }
+
+  function onStudySubmit() {
+    var q = state.questions[state.index];
+    var correct = false;
+    var userVal = '';
+
+    if (isMcq(q)) {
+      var sel = document.querySelector('input[name="studyMcq"]:checked');
+      if (!sel) {
+        alert('Please select an option.');
+        return;
+      }
+      userVal = sel.value;
+      correct = normLetter(userVal) === normLetter(q.answer);
+      var right = normLetter(q.answer);
+      document.querySelectorAll('#studyMcq label.opt').forEach(function (lab) {
+        var inp = lab.querySelector('input');
+        lab.classList.remove('correct-pick', 'wrong-pick', 'reveal-correct');
+        if (inp.value === right) lab.classList.add('reveal-correct');
+        if (inp.checked) lab.classList.add(correct ? 'correct-pick' : 'wrong-pick');
+        inp.disabled = true;
+      });
+    } else {
+      userVal = document.getElementById('studyWrittenInput').value;
+      correct = normText(userVal) === normText(q.answer);
+      document.getElementById('studyWrittenInput').disabled = true;
+    }
+
+    state.studySubmitted = true;
+    state.studyCorrect = correct;
+    var fb = document.getElementById('studyFeedback');
+    fb.classList.remove('hidden', 'ok', 'bad');
+    fb.classList.add(correct ? 'ok' : 'bad');
+    fb.textContent = correct ? 'Correct!' : 'Incorrect.';
+    if (!correct && q.answer) {
+      fb.textContent += ' Correct answer: ' + q.answer;
+    }
+    document.getElementById('studySubmit').classList.add('hidden');
+    document.getElementById('studyExplainWrap').classList.remove('hidden');
+    document.getElementById('studyNext').classList.remove('hidden');
+    document.getElementById('studyNext').textContent =
+      state.index >= state.questions.length - 1 ? 'Done' : 'Next';
+  }
+
+  function onStudyExplain() {
+    var q = state.questions[state.index];
+    var box = document.getElementById('studyExplainBox');
+    box.textContent = twoLineExplanation(q.explanation);
+    box.classList.remove('hidden');
+  }
+
+  function onStudyNext() {
+    state.index += 1;
+    if (state.index >= state.questions.length) {
+      show('screenHome');
+      state.questions = [];
+      state.index = 0;
+      return;
+    }
+    document.querySelectorAll('#studyMcq input').forEach(function (inp) { inp.disabled = false; });
+    document.getElementById('studyWrittenInput').disabled = false;
+    renderStudyQuestion();
+  }
+
+  function buildQuizHtml(questions) {
+    var host = document.getElementById('quizQuestions');
+    host.innerHTML = '';
+    questions.forEach(function (q, idx) {
+      var block = document.createElement('div');
+      block.className = 'quiz-block';
+      var h = document.createElement('h3');
+      h.textContent = 'Q' + (idx + 1);
+      block.appendChild(h);
+      var p = document.createElement('p');
+      p.className = 'q-text';
+      p.style.marginBottom = '10px';
+      p.textContent = q.question;
+      block.appendChild(p);
+      if (isMcq(q)) {
+        var opts = document.createElement('div');
+        opts.className = 'options';
+        Object.keys(q.options)
+          .sort()
+          .forEach(function (k) {
+            var id = 'qz-' + idx + '-' + k;
+            var lab = document.createElement('label');
+            lab.className = 'opt';
+            lab.setAttribute('for', id);
+            var inp = document.createElement('input');
+            inp.type = 'radio';
+            inp.name = 'quiz-q-' + idx;
+            inp.value = k;
+            inp.id = id;
+            lab.appendChild(inp);
+            lab.appendChild(document.createTextNode(' ' + k + '. ' + q.options[k]));
+            opts.appendChild(lab);
+          });
+        block.appendChild(opts);
+      } else {
+        var ta = document.createElement('textarea');
+        ta.id = 'quiz-ta-' + idx;
+        ta.rows = 3;
+        ta.placeholder = 'Your answer…';
+        block.appendChild(ta);
+      }
+      host.appendChild(block);
+    });
+  }
+
+  function gradeQuiz() {
+    var qs = state.questions;
+    var correct = 0;
+    var details = document.getElementById('resultDetails');
+    details.innerHTML = '';
+    qs.forEach(function (q, idx) {
+      var ok = false;
+      if (isMcq(q)) {
+        var sel = document.querySelector('input[name="quiz-q-' + idx + '"]:checked');
+        ok = sel && normLetter(sel.value) === normLetter(q.answer);
+      } else {
+        var ta = document.getElementById('quiz-ta-' + idx);
+        ok = ta && normText(ta.value) === normText(q.answer);
+      }
+      if (ok) correct += 1;
+      var row = document.createElement('div');
+      row.className = 'result-item ' + (ok ? 'yes' : 'no');
+      row.textContent =
+        'Q' + (idx + 1) + ': ' + (ok ? 'Correct' : 'Wrong') +
+        (!ok && q.answer ? ' — Answer: ' + q.answer : '');
+      details.appendChild(row);
+    });
+    document.getElementById('scoreDisplay').textContent = correct + ' / ' + qs.length;
+    show('screenResults');
+  }
+
+  document.getElementById('pickStudy').onclick = function () {
+    state.mode = 'study';
+    document.getElementById('filterModeLabel').textContent = 'Chapter by chapter — set your filters, then Start.';
+    show('screenFilters');
+  };
+  document.getElementById('pickQuiz').onclick = function () {
+    state.mode = 'quiz';
+    document.getElementById('filterModeLabel').textContent = 'Quiz — 10 questions from this chapter (or fewer if not enough in the database).';
+    show('screenFilters');
+  };
+  document.getElementById('filterBack').onclick = function () {
+    show('screenHome');
+  };
+  document.getElementById('gradeSelect').onchange = fillChapterSelect;
+  document.getElementById('stuSubjectSelect').onchange = fillChapterSelect;
+
+  document.getElementById('filterStart').onclick = function () {
+    var ch = document.getElementById('stuChapterSelect').value.trim();
+    if (!ch) {
+      alert('Choose a chapter.');
+      return;
+    }
+    if (state.mode === 'study') {
+      fetchQuestions(50, true, function (err, questions) {
+        if (err) {
+          alert(err.message || String(err));
+          return;
+        }
+        if (!questions.length) {
+          alert('No questions yet for this selection.');
+          return;
+        }
+        state.questions = questions;
+        state.index = 0;
+        show('screenStudy');
+        renderStudyQuestion();
+      });
+    } else {
+      fetchQuestions(10, true, function (err, questions) {
+        if (err) {
+          alert(err.message || String(err));
+          return;
+        }
+        if (!questions.length) {
+          alert('No questions yet for this selection.');
+          return;
+        }
+        state.questions = questions;
+        buildQuizHtml(questions);
+        show('screenQuiz');
+      });
+    }
+  };
+
+  document.getElementById('studySubmit').onclick = onStudySubmit;
+  document.getElementById('studyExplainBtn').onclick = onStudyExplain;
+  document.getElementById('studyNext').onclick = onStudyNext;
+  document.getElementById('quizBack').onclick = function () {
+    show('screenFilters');
+  };
+  document.getElementById('quizSubmitAll').onclick = function () {
+    gradeQuiz();
+  };
+  document.getElementById('resultsHome').onclick = function () {
+    state.questions = [];
+    show('screenHome');
+  };
+
+  var s = document.createElement('script');
+  s.src = getApiBase().replace(/\/$/, '') + '/static/chapters.js';
+  s.onload = function () {
+    fillChapterSelect();
+  };
+  s.onerror = function () {
+    alert('Open this page at http://127.0.0.1:8000/student so chapters can load.');
+  };
+  document.head.appendChild(s);
+})();
+</script>
+</body>
+</html>
