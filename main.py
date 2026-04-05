@@ -324,7 +324,7 @@ FORMAT_EXAMPLES = {
 
 
 TYPE_RULES = {
-    "mcq": "Multiple choice ONLY. Each item MUST have options A–D and answer MUST be a single letter A/B/C/D. Do NOT output short-answer-only objects.",
+    "mcq": "Multiple choice ONLY. Each item MUST have options A–D and answer MUST be a single letter A/B/C/D. Do NOT output short-answer-only objects. The asnwers must be equally divided between A, B,C & D. Preference should not be given to any one option. The answers must not follow any sort of pattern.",
     "short": "Short answer ONLY. Each item MUST have question, answer (1–3 sentences), explanation. Do NOT include options, A/B/C/D, or MCQ fields.",
     "long": "Long answer ONLY. Each item MUST have question, answer (detailed paragraph(s)), explanation. Do NOT include options or MCQ fields.",
     "conceptual": "Conceptual (why/how) ONLY. Same JSON shape as short: question, answer (2–5 sentences), explanation. No MCQ options.",
