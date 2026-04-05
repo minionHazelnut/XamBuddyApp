@@ -4,51 +4,82 @@
   <meta charset="UTF-8" />
   <title>XamBuddy</title>
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       font-family: Arial, sans-serif;
-      padding: 30px;
-      background: #f5f5f5;
+      padding: 24px;
+      background: #f0f0f0;
+      margin: 0;
     }
 
-    .container {
-      max-width: 500px;
-      margin: auto;
-      background: white;
+    .page-title {
+      text-align: center;
+      margin: 0 0 20px 0;
+      font-size: 1.5rem;
+      color: #222;
+    }
+
+    .layout {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 24px;
+      max-width: 1100px;
+      margin: 0 auto;
+      align-items: flex-start;
+      justify-content: center;
+    }
+
+    .panel {
+      flex: 1 1 420px;
+      min-width: 280px;
+      max-width: 520px;
+      background: #fff;
       padding: 20px;
       border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 0 12px rgba(0, 0, 0, 0.08);
     }
 
-    label {
+    .panel h2 {
+      margin: 0 0 16px 0;
+      font-size: 1.15rem;
+      color: #333;
+      border-bottom: 2px solid #007bff;
+      padding-bottom: 8px;
+    }
+
+    .panel label {
       display: block;
-      margin-top: 14px;
-      margin-bottom: 6px;
+      margin-top: 12px;
+      margin-bottom: 4px;
       font-weight: 600;
       font-size: 0.9rem;
       color: #333;
     }
 
-    label:first-of-type {
+    .panel label:first-of-type,
+    .panel h2 + label {
       margin-top: 0;
     }
 
-    input,
-    select,
-    button {
+    .panel input,
+    .panel select,
+    .panel button {
       width: 100%;
       padding: 10px;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
       border-radius: 5px;
       border: 1px solid #ccc;
-      box-sizing: border-box;
     }
 
-    input[type="number"] {
+    .panel input[type="number"] {
       font-size: 1rem;
     }
 
-    input[type="number"]::-webkit-outer-spin-button,
-    input[type="number"]::-webkit-inner-spin-button {
+    .panel input[type="number"]::-webkit-outer-spin-button,
+    .panel input[type="number"]::-webkit-inner-spin-button {
       opacity: 1;
       height: 2.25rem;
     }
@@ -56,95 +87,153 @@
     .hint {
       font-size: 0.8rem;
       color: #666;
-      margin: 0 0 12px 0;
+      margin: 0 0 10px 0;
     }
 
-    button {
-      margin-top: 18px;
+    .panel button {
+      margin-top: 14px;
       background: #007bff;
-      color: white;
+      color: #fff;
       border: none;
       cursor: pointer;
     }
 
-    button:hover {
+    .panel button:hover {
       background: #0069d9;
     }
 
+    #retrieveBtn {
+      background: #198754;
+    }
+
+    #retrieveBtn:hover {
+      background: #157347;
+    }
+
     .output {
-      margin-top: 20px;
-      padding: 15px;
+      margin-top: 16px;
+      padding: 14px;
       background: #fafafa;
       border: 1px solid #ddd;
       border-radius: 5px;
       white-space: pre-wrap;
+      min-height: 120px;
+      font-size: 0.95rem;
     }
   </style>
 </head>
 <body>
 
-<div class="container">
-  <h2>XamBuddy Question Generator</h2>
+<h1 class="page-title">XamBuddy</h1>
 
-  <label for="fileInput">Source PDF</label>
-  <input type="file" id="fileInput" accept=".pdf,application/pdf" />
+<div class="layout">
+  <!-- LEFT: Generate (upload + save to DB — unchanged API) -->
+  <div class="panel">
+    <h2>Generate from PDF</h2>
 
-  <label for="examSelect">Exam</label>
-  <select id="examSelect" required>
-    <option value="10th CBSE Board">10th CBSE Board</option>
-    <option value="12th CBSE Board">12th CBSE Board</option>
-  </select>
+    <label for="fileInput">Source PDF</label>
+    <input type="file" id="fileInput" accept=".pdf,application/pdf" />
 
-  <label for="subjectSelect">Subject</label>
-  <select id="subjectSelect" required>
-    <option value="Psychology">Psychology</option>
-    <option value="Mathematics">Mathematics</option>
-    <option value="Physics">Physics</option>
-    <option value="Chemistry">Chemistry</option>
-    <option value="Biology">Biology</option>
-    <option value="English">English</option>
-    <option value="Hindi">Hindi</option>
-    <option value="History">History</option>
-    <option value="Geography">Geography</option>
-    <option value="Political Science">Political Science</option>
-    <option value="Economics">Economics</option>
-    <option value="Computer Science">Computer Science</option>
-  </select>
+    <label for="examSelect">Exam</label>
+    <select id="examSelect" required>
+      <option value="10th CBSE Board">10th CBSE Board</option>
+      <option value="12th CBSE Board">12th CBSE Board</option>
+    </select>
 
-  <label for="chapterSelect">Chapter</label>
-  <select id="chapterSelect" required></select>
-  <p class="hint">Chapters follow your syllabus order for the exam and subject you chose.</p>
+    <label for="subjectSelect">Subject</label>
+    <select id="subjectSelect" required>
+      <option value="Psychology">Psychology</option>
+      <option value="Mathematics">Mathematics</option>
+      <option value="Physics">Physics</option>
+      <option value="Chemistry">Chemistry</option>
+      <option value="Biology">Biology</option>
+      <option value="English">English</option>
+      <option value="Hindi">Hindi</option>
+      <option value="History">History</option>
+      <option value="Geography">Geography</option>
+      <option value="Political Science">Political Science</option>
+      <option value="Economics">Economics</option>
+      <option value="Computer Science">Computer Science</option>
+    </select>
 
-  <label for="qType">Question type</label>
-  <select id="qType">
-    <option value="mcq">MCQ</option>
-    <option value="short">Short Answer</option>
-    <option value="long">Long Answer</option>
-  </select>
+    <label for="chapterSelect">Chapter</label>
+    <select id="chapterSelect" required></select>
+    <p class="hint">Chapters follow your syllabus order for the exam and subject you chose.</p>
 
-  <label for="difficulty">Difficulty</label>
-  <select id="difficulty">
-    <option value="easy">Easy</option>
-    <option value="medium">Medium</option>
-    <option value="hard">Hard</option>
-  </select>
+    <label for="qType">Question type</label>
+    <select id="qType">
+      <option value="mcq">MCQ</option>
+      <option value="short">Short Answer</option>
+      <option value="long">Long Answer</option>
+    </select>
 
-  <label for="numQs">Number of questions</label>
-  <input
-    type="number"
-    id="numQs"
-    min="1"
-    max="50"
-    step="1"
-    value="5"
-    inputmode="numeric"
-  />
-  <p class="hint">Use the arrows or type a number (1–50).</p>
+    <label for="difficulty">Difficulty</label>
+    <select id="difficulty">
+      <option value="easy">Easy</option>
+      <option value="medium">Medium</option>
+      <option value="hard">Hard</option>
+    </select>
 
-  <button type="button" id="generateBtn">Generate</button>
+    <label for="numQs">Number of questions</label>
+    <input type="number" id="numQs" min="1" max="50" step="1" value="5" inputmode="numeric" />
+    <p class="hint">Use the arrows or type a number (1–50).</p>
 
-  <div class="output" id="outputBox">
-    Your questions will appear here...
+    <button type="button" id="generateBtn">Generate</button>
+
+    <div class="output" id="outputBox">Your generated questions will appear here…</div>
+  </div>
+
+  <!-- RIGHT: Retrieve from database only -->
+  <div class="panel">
+    <h2>Retrieve from database</h2>
+
+    <label for="retExamSelect">Exam</label>
+    <select id="retExamSelect" required>
+      <option value="10th CBSE Board">10th CBSE Board</option>
+      <option value="12th CBSE Board">12th CBSE Board</option>
+    </select>
+
+    <label for="retSubjectSelect">Subject</label>
+    <select id="retSubjectSelect" required>
+      <option value="Psychology">Psychology</option>
+      <option value="Mathematics">Mathematics</option>
+      <option value="Physics">Physics</option>
+      <option value="Chemistry">Chemistry</option>
+      <option value="Biology">Biology</option>
+      <option value="English">English</option>
+      <option value="Hindi">Hindi</option>
+      <option value="History">History</option>
+      <option value="Geography">Geography</option>
+      <option value="Political Science">Political Science</option>
+      <option value="Economics">Economics</option>
+      <option value="Computer Science">Computer Science</option>
+    </select>
+
+    <label for="retChapterSelect">Chapter</label>
+    <select id="retChapterSelect" required></select>
+    <p class="hint">Pick the chapter whose saved questions you want to load.</p>
+
+    <label for="retQType">Question type</label>
+    <select id="retQType">
+      <option value="mcq">MCQ</option>
+      <option value="short">Short Answer</option>
+      <option value="long">Long Answer</option>
+    </select>
+
+    <label for="retDifficulty">Difficulty</label>
+    <select id="retDifficulty">
+      <option value="easy">Easy</option>
+      <option value="medium">Medium</option>
+      <option value="hard">Hard</option>
+    </select>
+
+    <label for="retNumQs">Max questions to retrieve</label>
+    <input type="number" id="retNumQs" min="1" max="100" step="1" value="10" inputmode="numeric" />
+    <p class="hint">Up to 100; only matching rows are returned.</p>
+
+    <button type="button" id="retrieveBtn">Retrieve</button>
+
+    <div class="output" id="retrieveOutputBox">Retrieved questions will appear here…</div>
   </div>
 </div>
 
@@ -160,11 +249,11 @@
     return '';
   }
 
-  function refreshChapterDropdown() {
+  function fillChapterSelect(selectId, examInputId, subjectInputId) {
     var root = window.CHAPTERS_BY_EXAM_SUBJECT || {};
-    var exam = document.getElementById('examSelect').value;
-    var subject = document.getElementById('subjectSelect').value;
-    var sel = document.getElementById('chapterSelect');
+    var exam = document.getElementById(examInputId).value;
+    var subject = document.getElementById(subjectInputId).value;
+    var sel = document.getElementById(selectId);
     var list = (root[exam] && root[exam][subject]) || [];
     sel.innerHTML = '';
     if (list.length === 0) {
@@ -182,6 +271,33 @@
     });
   }
 
+  function refreshGenChapters() {
+    fillChapterSelect('chapterSelect', 'examSelect', 'subjectSelect');
+  }
+
+  function refreshRetChapters() {
+    fillChapterSelect('retChapterSelect', 'retExamSelect', 'retSubjectSelect');
+  }
+
+  function renderQuestionsText(questions) {
+    if (!questions || questions.length === 0) {
+      return 'No questions yet.';
+    }
+    var out = '';
+    questions.forEach(function (q, index) {
+      out += index + 1 + '. ' + q.question + '\n';
+      if (q.options) {
+        for (var key in q.options) {
+          if (Object.prototype.hasOwnProperty.call(q.options, key)) {
+            out += key + '. ' + q.options[key] + '\n';
+          }
+        }
+      }
+      out += '\n';
+    });
+    return out;
+  }
+
   async function generateQuestions() {
     var fileInput = document.getElementById('fileInput');
     var file = fileInput.files[0];
@@ -192,8 +308,7 @@
       return;
     }
 
-    var numEl = document.getElementById('numQs');
-    var numRaw = numEl.value;
+    var numRaw = document.getElementById('numQs').value;
     var numQ = parseInt(numRaw, 10);
     if (numRaw === '' || isNaN(numQ) || numQ < 1) {
       outputBox.textContent = 'Enter a valid number of questions (1 or more).';
@@ -226,26 +341,20 @@
     formData.append('q_type', document.getElementById('qType').value);
     formData.append('num_q', String(numQ));
 
-    var base = getApiBase();
-    var url = base ? base.replace(/\/$/, '') + '/generate' : '/generate';
+    var base = getApiBase().replace(/\/$/, '');
+    var url = (base ? base : '') + '/generate';
 
     outputBox.textContent = 'Generating…';
 
     try {
-      var res = await fetch(url, {
-        method: 'POST',
-        body: formData,
-      });
+      var res = await fetch(url, { method: 'POST', body: formData });
       var text = await res.text();
       var data;
       try {
         data = text ? JSON.parse(text) : {};
       } catch (parseErr) {
         outputBox.textContent =
-          'Server returned non-JSON (' +
-          res.status +
-          '). Is uvicorn running on port 8000?\n\n' +
-          text.slice(0, 800);
+          'Server returned non-JSON (' + res.status + '). Is uvicorn on port 8000?\n\n' + text.slice(0, 800);
         return;
       }
 
@@ -266,29 +375,78 @@
       }
 
       if (data.error) {
-        outputBox.textContent =
-          data.error + (data.raw ? '\n\n--- raw ---\n' + data.raw : '');
+        outputBox.textContent = data.error + (data.raw ? '\n\n--- raw ---\n' + data.raw : '');
         return;
       }
 
-      outputBox.textContent = '';
-      data.questions.forEach(function (q, index) {
-        outputBox.textContent += (index + 1) + '. ' + q.question + '\n';
-        if (q.options) {
-          for (var key in q.options) {
-            if (Object.prototype.hasOwnProperty.call(q.options, key)) {
-              outputBox.textContent += key + '. ' + q.options[key] + '\n';
-            }
-          }
-        }
-        outputBox.textContent += '\n';
-      });
+      outputBox.textContent = renderQuestionsText(data.questions);
     } catch (err) {
       outputBox.textContent =
         'Network error calling ' +
         url +
-        '. Start the API with: uvicorn main:app --reload (in the XamBuddy folder).\n\n' +
+        '. Start: uvicorn main:app --reload (XamBuddy folder).\n\n' +
         err.message;
+    }
+  }
+
+  async function retrieveQuestions() {
+    var box = document.getElementById('retrieveOutputBox');
+    var exam = document.getElementById('retExamSelect').value;
+    var subject = document.getElementById('retSubjectSelect').value;
+    var chapter = document.getElementById('retChapterSelect').value.trim();
+    var qType = document.getElementById('retQType').value;
+    var difficulty = document.getElementById('retDifficulty').value;
+    var numRaw = document.getElementById('retNumQs').value;
+    var limit = parseInt(numRaw, 10);
+
+    if (!chapter) {
+      box.textContent = 'Please choose a chapter.';
+      return;
+    }
+    if (numRaw === '' || isNaN(limit) || limit < 1) {
+      box.textContent = 'Enter a valid max number of questions (1 or more).';
+      return;
+    }
+    if (limit > 100) {
+      box.textContent = 'Maximum retrieve limit is 100.';
+      return;
+    }
+
+    var params = new URLSearchParams({
+      exam: exam,
+      subject: subject,
+      chapter: chapter,
+      q_type: qType,
+      difficulty: difficulty,
+      limit: String(limit),
+    });
+
+    var base = getApiBase().replace(/\/$/, '');
+    var url = (base ? base : '') + '/retrieve?' + params.toString();
+
+    box.textContent = 'Loading…';
+
+    try {
+      var res = await fetch(url, { method: 'GET' });
+      var text = await res.text();
+      var data;
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (e) {
+        box.textContent = 'Bad response (' + res.status + ').\n' + text.slice(0, 600);
+        return;
+      }
+
+      if (!res.ok) {
+        var detail = data.detail;
+        var msg = typeof detail === 'string' ? detail : JSON.stringify(data);
+        box.textContent = 'Request failed (' + res.status + '):\n' + msg;
+        return;
+      }
+
+      box.textContent = renderQuestionsText(data.questions);
+    } catch (err) {
+      box.textContent = 'Network error.\n' + err.message;
     }
   }
 
@@ -297,14 +455,20 @@
     var s = document.createElement('script');
     s.src = (base ? base : '') + '/static/chapters.js';
     s.onload = function () {
-      refreshChapterDropdown();
-      document.getElementById('examSelect').addEventListener('change', refreshChapterDropdown);
-      document.getElementById('subjectSelect').addEventListener('change', refreshChapterDropdown);
+      refreshGenChapters();
+      refreshRetChapters();
+      document.getElementById('examSelect').addEventListener('change', refreshGenChapters);
+      document.getElementById('subjectSelect').addEventListener('change', refreshGenChapters);
+      document.getElementById('retExamSelect').addEventListener('change', refreshRetChapters);
+      document.getElementById('retSubjectSelect').addEventListener('change', refreshRetChapters);
       document.getElementById('generateBtn').addEventListener('click', generateQuestions);
+      document.getElementById('retrieveBtn').addEventListener('click', retrieveQuestions);
     };
     s.onerror = function () {
-      document.getElementById('outputBox').textContent =
-        'Could not load chapter list from /static/chapters.js. Open this app at http://127.0.0.1:8000/ (uvicorn) so static files are served.';
+      var msg =
+        'Could not load /static/chapters.js. Open http://127.0.0.1:8000/ so static files are served.';
+      document.getElementById('outputBox').textContent = msg;
+      document.getElementById('retrieveOutputBox').textContent = msg;
     };
     document.head.appendChild(s);
   })();

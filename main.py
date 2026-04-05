@@ -1,6 +1,7 @@
 from pathlib import Path
+from typing import Literal
 
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -248,6 +249,30 @@ async def serve_index():
     return FileResponse(BASE_DIR / "index.html")
 
 
+@app.get("/retrieve")
+async def retrieve_questions(
+    exam: str = Query(..., min_length=1),
+    subject: str = Query(..., min_length=1),
+    chapter: str = Query(..., min_length=1),
+    q_type: Literal["mcq", "short", "long", "conceptual", "mixed"] = Query(...),
+    difficulty: Literal["easy", "medium", "hard", "mixed"] = Query(...),
+    limit: int = Query(10, ge=1, le=100),
+):
+    """Read-only: fetch stored questions matching filters (does not call AI or /generate)."""
+    ch = chapter.strip()
+    if not ch:
+        raise HTTPException(status_code=400, detail="chapter is required.")
+    try:
+        questions = get_questions(q_type, difficulty, subject, exam, ch, limit)
+    except (OperationalError, DatabaseError) as e:
+        logger.exception("Database error on /retrieve")
+        raise HTTPException(
+            status_code=503,
+            detail="Could not reach the database. Try again later.",
+        ) from e
+    return {"questions": questions}
+
+
 # ---------- UTILS ----------
 
 
@@ -342,8 +367,6 @@ MAX_TOKENS_FOR_TYPE = {
 
 
 # ---------- 1. GENERATE MCQs ----------
-
-from typing import Literal
 
 
 @app.post("/generate")
