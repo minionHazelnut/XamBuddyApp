@@ -10,11 +10,15 @@ from dotenv import load_dotenv
 import random
 import json
 import re
+import logging
 
-
+import psycopg2
+from psycopg2 import OperationalError, DatabaseError
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
@@ -29,14 +33,171 @@ app.add_middleware(
 CLAUDE_API_KEY = os.getenv("CLAUDE_API_KEY")
 client = anthropic.Anthropic(api_key=CLAUDE_API_KEY)
 
+# Default matches remote Postgres; override with DATABASE_URL (postgresql:// or postgresql+asyncpg://)
+_DEFAULT_DATABASE_URL = "postgresql+asyncpg://postgres:xambuddypwd@139.59.93.35:5432/xambuddydb"
+
+
+def _normalize_psycopg2_dsn(url: str) -> str:
+    if url.startswith("postgresql+asyncpg://"):
+        return "postgresql://" + url[len("postgresql+asyncpg://") :]
+    return url
+
+
+def get_db_connection():
+    """Return a new psycopg2 connection. Caller must close() or use try/finally."""
+    raw = os.getenv("DATABASE_URL", _DEFAULT_DATABASE_URL)
+    dsn = _normalize_psycopg2_dsn(raw.strip())
+    return psycopg2.connect(dsn)
+
+
+def _difficulty_for_db(difficulty: str) -> str:
+    """DB allows only easy|medium|hard; API also has mixed."""
+    if difficulty == "mixed":
+        return "medium"
+    return difficulty
+
+
+def _question_type_for_db(q_type: str, item: dict) -> str:
+    """DB allows mcq|short|long. Map API types into that set."""
+    if q_type == "mixed":
+        return item.get("question_type") or "short"
+    if q_type == "conceptual":
+        return "long"
+    return q_type
+
+
+def save_questions(questions, q_type, difficulty, subject, exam, topic: str = ""):
+    """
+    Persist generated questions. MCQ rows store options as JSONB via json.dumps.
+    """
+    diff_db = _difficulty_for_db(difficulty)
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            for q in questions:
+                row_type = _question_type_for_db(q_type, q)
+                if row_type == "mcq" and q.get("options") is not None:
+                    opts = json.dumps(q["options"])
+                else:
+                    opts = None
+                ans = q.get("answer")
+                if ans is not None:
+                    ans = str(ans)
+                expl = q.get("explanation")
+                if expl is not None:
+                    expl = str(expl)
+                else:
+                    expl = ""
+                cur.execute(
+                    """
+                    INSERT INTO questions (
+                        exam, subject, topic, question_text, question_type,
+                        difficulty, options, correct_answer, explanation
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s)
+                    """,
+                    (
+                        exam,
+                        subject,
+                        topic or None,
+                        q.get("question") or "",
+                        row_type,
+                        diff_db,
+                        opts,
+                        ans,
+                        expl,
+                    ),
+                )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+def _row_to_api_item(row, for_mixed_pool: bool):
+    """Map DB row to the shape returned in `questions` arrays."""
+    (
+        _id,
+        _exam,
+        _subj,
+        _topic,
+        question_text,
+        qtype,
+        _diff,
+        options,
+        correct_answer,
+        explanation,
+        _ts,
+    ) = row
+    item = {
+        "question": question_text or "",
+        "answer": correct_answer if correct_answer is not None else "",
+        "explanation": explanation if explanation is not None else "",
+    }
+    if qtype == "mcq" and options is not None:
+        if isinstance(options, str):
+            item["options"] = json.loads(options)
+        else:
+            item["options"] = options
+    if for_mixed_pool:
+        item["question_type"] = qtype
+    return item
+
+
+def _db_question_type_filter(q_type: str):
+    """Return SQL fragment params for question_type filter."""
+    if q_type == "mixed":
+        return "question_type IN ('mcq', 'short')", []
+    if q_type == "conceptual":
+        return "question_type = %s", ["long"]
+    return "question_type = %s", [q_type]
+
+
+def get_questions(q_type, difficulty, subject, exam, topic: str, limit):
+    """
+    Fetch up to `limit` questions matching filters. Returns list of dicts in API shape.
+    For q_type 'mixed', matches rows with question_type mcq or short.
+    """
+    if limit <= 0:
+        return []
+
+    diff_db = _difficulty_for_db(difficulty)
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            type_sql, type_params = _db_question_type_filter(q_type)
+            topic_clause = "topic IS NOT DISTINCT FROM %s"
+            params = [exam, subject, topic or None, diff_db] + type_params + [limit]
+            cur.execute(
+                f"""
+                SELECT
+                    id, exam, subject, topic, question_text, question_type, difficulty,
+                    options, correct_answer, explanation, created_at
+                FROM questions
+                WHERE exam = %s AND subject = %s AND {topic_clause}
+                  AND difficulty = %s AND ({type_sql})
+                ORDER BY created_at DESC
+                LIMIT %s
+                """,
+                params,
+            )
+            rows = cur.fetchall()
+    finally:
+        conn.close()
+
+    for_mixed = q_type == "mixed"
+    return [_row_to_api_item(r, for_mixed) for r in rows]
+
 
 @app.get("/")
 async def serve_index():
     return FileResponse(BASE_DIR / "index.html")
 
 
-
 # ---------- UTILS ----------
+
 
 def extract_text(file_bytes):
     doc = fitz.open(stream=file_bytes, filetype="pdf")
@@ -47,7 +208,7 @@ def extract_text(file_bytes):
 
 
 def get_random_chunks(text, chunk_size=800, num_chunks=3):
-    chunks = [text[i:i+chunk_size] for i in range(0, len(text), chunk_size)]
+    chunks = [text[i : i + chunk_size] for i in range(0, len(text), chunk_size)]
     return " ".join(random.sample(chunks, min(num_chunks, len(chunks))))
 
 
@@ -132,13 +293,32 @@ MAX_TOKENS_FOR_TYPE = {
 
 from typing import Literal
 
+
 @app.post("/generate")
 async def generate(
     file: UploadFile = File(...),
     difficulty: Literal["easy", "medium", "hard", "mixed"] = Form(...),
     q_type: Literal["mcq", "short", "long", "conceptual", "mixed"] = Form(...),
-    num_q: int = Form(...)
+    num_q: int = Form(...),
+    subject: str = Form("general"),
+    exam: str = Form("general"),
+    topic: str = Form(""),
 ):
+    if num_q < 1:
+        raise HTTPException(status_code=400, detail="num_q must be at least 1.")
+
+    try:
+        cached = get_questions(q_type, difficulty, subject, exam, topic, num_q)
+    except (OperationalError, DatabaseError) as e:
+        logger.exception("Database error while reading questions cache")
+        raise HTTPException(
+            status_code=503,
+            detail="Could not reach the database. Try again later.",
+        ) from e
+
+    if len(cached) >= num_q:
+        return {"questions": cached[:num_q]}
+
     content = await file.read()
     try:
         text = extract_text(content)
@@ -160,7 +340,7 @@ async def generate(
         "easy": "basic recall",
         "medium": "understanding and application",
         "hard": "deep reasoning",
-        "mixed": "mix of all levels"
+        "mixed": "mix of all levels",
     }
 
     type_map = {
@@ -203,29 +383,36 @@ CONTENT:
     response = client.messages.create(
         model="claude-haiku-4-5-20251001",
         max_tokens=max_out,
-        messages=[{
-            "role": "user",
-            "content": prompt
-        }]
+        messages=[{"role": "user", "content": prompt}],
     )
 
     raw = response.content[0].text
 
-    # ✅ Clean JSON extraction
     try:
         json_str = re.search(r"\[.*\]", raw, re.DOTALL).group()
         data = json.loads(json_str)
-        return {"questions": data}
-    except:
-        return {
-            "error": "Invalid JSON from AI",
-            "raw": raw
-        }
+    except Exception:
+        return {"error": "Invalid JSON from AI", "raw": raw}
+
+    if not isinstance(data, list):
+        return {"error": "AI response was not a JSON array", "raw": raw}
+
+    try:
+        save_questions(data, q_type, difficulty, subject, exam, topic)
+    except (OperationalError, DatabaseError) as e:
+        logger.exception("Database error while saving questions")
+        raise HTTPException(
+            status_code=503,
+            detail="Generated questions but could not save them. Try again later.",
+        ) from e
+
+    return {"questions": data}
+
 
 @app.post("/chat")
 async def chat(
     file: UploadFile = File(...),
-    question: str = Form(...)
+    question: str = Form(...),
 ):
     content = await file.read()
     text = extract_text(content)
@@ -235,17 +422,19 @@ async def chat(
     response = client.messages.create(
         model="claude-3-haiku-20240307",
         max_tokens=800,
-        messages=[{
-            "role": "user",
-            "content": f"""
+        messages=[
+            {
+                "role": "user",
+                "content": f"""
 Answer using ONLY this content:
 
 {selected_content}
 
 Question:
 {question}
-"""
-        }]
+""",
+            }
+        ],
     )
 
     return {"answer": response.content[0].text}
