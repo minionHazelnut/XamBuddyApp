@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Prepzo UI</title>
+  <title>XamBuddy</title>
   <style>
     body {
-      font-family: Arial;
+      font-family: Arial, sans-serif;
       padding: 30px;
       background: #f5f5f5;
     }
@@ -16,23 +16,59 @@
       background: white;
       padding: 20px;
       border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     }
 
-    input, select, button {
+    label {
+      display: block;
+      margin-top: 14px;
+      margin-bottom: 6px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: #333;
+    }
+
+    label:first-of-type {
+      margin-top: 0;
+    }
+
+    input,
+    select,
+    button {
       width: 100%;
       padding: 10px;
-      margin-top: 10px;
-      margin-bottom: 15px;
+      margin-bottom: 4px;
       border-radius: 5px;
       border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+
+    input[type="number"] {
+      font-size: 1rem;
+    }
+
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      opacity: 1;
+      height: 2.25rem;
+    }
+
+    .hint {
+      font-size: 0.8rem;
+      color: #666;
+      margin: 0 0 12px 0;
     }
 
     button {
+      margin-top: 18px;
       background: #007bff;
       color: white;
       border: none;
       cursor: pointer;
+    }
+
+    button:hover {
+      background: #0069d9;
     }
 
     .output {
@@ -48,39 +84,71 @@
 <body>
 
 <div class="container">
-  <h2>Prepzo Question Generator</h2>
+  <h2>XamBuddy Question Generator</h2>
 
-  <!-- Upload (PDF — backend extracts text with PyMuPDF) -->
+  <label for="fileInput">Source PDF</label>
   <input type="file" id="fileInput" accept=".pdf,application/pdf" />
 
-  <!-- Question Type -->
+  <label for="examSelect">Exam</label>
+  <select id="examSelect" required>
+    <option value="10th CBSE Board">10th CBSE Board</option>
+    <option value="12th CBSE Board">12th CBSE Board</option>
+  </select>
+
+  <label for="subjectSelect">Subject</label>
+  <select id="subjectSelect" required>
+    <option value="Psychology">Psychology</option>
+    <option value="Mathematics">Mathematics</option>
+    <option value="Physics">Physics</option>
+    <option value="Chemistry">Chemistry</option>
+    <option value="Biology">Biology</option>
+    <option value="English">English</option>
+    <option value="Hindi">Hindi</option>
+    <option value="History">History</option>
+    <option value="Geography">Geography</option>
+    <option value="Political Science">Political Science</option>
+    <option value="Economics">Economics</option>
+    <option value="Computer Science">Computer Science</option>
+  </select>
+
+  <label for="chapterSelect">Chapter</label>
+  <select id="chapterSelect" required></select>
+  <p class="hint">Chapters follow your syllabus order for the exam and subject you chose.</p>
+
+  <label for="qType">Question type</label>
   <select id="qType">
     <option value="mcq">MCQ</option>
     <option value="short">Short Answer</option>
     <option value="long">Long Answer</option>
   </select>
 
-  <!-- Difficulty -->
+  <label for="difficulty">Difficulty</label>
   <select id="difficulty">
     <option value="easy">Easy</option>
     <option value="medium">Medium</option>
     <option value="hard">Hard</option>
   </select>
 
-  <!-- Number of Questions -->
-  <input type="number" id="numQs" min="1" max="50" value="5" />
+  <label for="numQs">Number of questions</label>
+  <input
+    type="number"
+    id="numQs"
+    min="1"
+    max="50"
+    step="1"
+    value="5"
+    inputmode="numeric"
+  />
+  <p class="hint">Use the arrows or type a number (1–50).</p>
 
-  <!-- Generate Button (type=button avoids accidental form submit) -->
   <button type="button" id="generateBtn">Generate</button>
 
-  <!-- Output -->
   <div class="output" id="outputBox">
     Your questions will appear here...
   </div>
 </div>
 
 <script>
-  /** Backend URL: relative only works when this page is opened from uvicorn (port 8000). */
   function getApiBase() {
     if (window.location.protocol === 'file:') {
       return 'http://127.0.0.1:8000';
@@ -90,6 +158,28 @@
       return window.location.protocol + '//127.0.0.1:8000';
     }
     return '';
+  }
+
+  function refreshChapterDropdown() {
+    var root = window.CHAPTERS_BY_EXAM_SUBJECT || {};
+    var exam = document.getElementById('examSelect').value;
+    var subject = document.getElementById('subjectSelect').value;
+    var sel = document.getElementById('chapterSelect');
+    var list = (root[exam] && root[exam][subject]) || [];
+    sel.innerHTML = '';
+    if (list.length === 0) {
+      var ph = document.createElement('option');
+      ph.value = '';
+      ph.textContent = 'No chapters — edit static/chapters.js for this exam/subject';
+      sel.appendChild(ph);
+      return;
+    }
+    list.forEach(function (name) {
+      var o = document.createElement('option');
+      o.value = name;
+      o.textContent = name;
+      sel.appendChild(o);
+    });
   }
 
   async function generateQuestions() {
@@ -102,15 +192,36 @@
       return;
     }
 
-    var numRaw = document.getElementById('numQs').value;
+    var numEl = document.getElementById('numQs');
+    var numRaw = numEl.value;
     var numQ = parseInt(numRaw, 10);
-    if (!numRaw || isNaN(numQ) || numQ < 1) {
+    if (numRaw === '' || isNaN(numQ) || numQ < 1) {
       outputBox.textContent = 'Enter a valid number of questions (1 or more).';
+      return;
+    }
+    if (numQ > 50) {
+      outputBox.textContent = 'Maximum is 50 questions.';
+      return;
+    }
+
+    var exam = document.getElementById('examSelect').value;
+    var subject = document.getElementById('subjectSelect').value;
+    if (!exam || !subject) {
+      outputBox.textContent = 'Please choose an exam and a subject.';
+      return;
+    }
+
+    var chapter = document.getElementById('chapterSelect').value.trim();
+    if (!chapter) {
+      outputBox.textContent = 'Please choose a chapter (load the page via the API if the list is empty).';
       return;
     }
 
     var formData = new FormData();
     formData.append('file', file);
+    formData.append('exam', exam);
+    formData.append('subject', subject);
+    formData.append('chapter', chapter);
     formData.append('difficulty', document.getElementById('difficulty').value);
     formData.append('q_type', document.getElementById('qType').value);
     formData.append('num_q', String(numQ));
@@ -160,25 +271,43 @@
         return;
       }
 
-      // ✅ Proper formatted display
-        outputBox.textContent = '';
-        data.questions.forEach(function (q, index) {
-          outputBox.textContent += (index + 1) + '. ' + q.question + '\n';
+      outputBox.textContent = '';
+      data.questions.forEach(function (q, index) {
+        outputBox.textContent += (index + 1) + '. ' + q.question + '\n';
+        if (q.options) {
           for (var key in q.options) {
-            outputBox.textContent += key + '. ' + q.options[key] + '\n';
+            if (Object.prototype.hasOwnProperty.call(q.options, key)) {
+              outputBox.textContent += key + '. ' + q.options[key] + '\n';
+            }
           }
-          outputBox.textContent += '\n';
-        });
+        }
+        outputBox.textContent += '\n';
+      });
     } catch (err) {
       outputBox.textContent =
         'Network error calling ' +
         url +
-        '. Start the API with: uvicorn main:app --reload (in the Prepzo folder).\n\n' +
+        '. Start the API with: uvicorn main:app --reload (in the XamBuddy folder).\n\n' +
         err.message;
     }
   }
 
-  document.getElementById('generateBtn').addEventListener('click', generateQuestions);
+  (function loadChaptersAndWireUi() {
+    var base = getApiBase().replace(/\/$/, '');
+    var s = document.createElement('script');
+    s.src = (base ? base : '') + '/static/chapters.js';
+    s.onload = function () {
+      refreshChapterDropdown();
+      document.getElementById('examSelect').addEventListener('change', refreshChapterDropdown);
+      document.getElementById('subjectSelect').addEventListener('change', refreshChapterDropdown);
+      document.getElementById('generateBtn').addEventListener('click', generateQuestions);
+    };
+    s.onerror = function () {
+      document.getElementById('outputBox').textContent =
+        'Could not load chapter list from /static/chapters.js. Open this app at http://127.0.0.1:8000/ (uvicorn) so static files are served.';
+    };
+    document.head.appendChild(s);
+  })();
 </script>
 
 </body>

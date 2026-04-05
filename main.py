@@ -3,6 +3,7 @@ from pathlib import Path
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 import fitz
 import anthropic
 import os
@@ -29,6 +30,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+STATIC_DIR = BASE_DIR / "static"
+STATIC_DIR.mkdir(exist_ok=True)
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 CLAUDE_API_KEY = os.getenv("CLAUDE_API_KEY")
 client = anthropic.Anthropic(api_key=CLAUDE_API_KEY)
@@ -66,16 +71,63 @@ def _question_type_for_db(q_type: str, item: dict) -> str:
     return q_type
 
 
-def save_questions(questions, q_type, difficulty, subject, exam, topic: str = ""):
+def _exact_question_fingerprint(text: str) -> str:
     """
-    Persist generated questions. MCQ rows store options as JSONB via json.dumps.
+    Fingerprint for duplicate checks only: same wording after trim, lowercasing, and
+    collapsing whitespace. Reworded or indirect variants (competitive-exam “twists”)
+    produce different fingerprints and are always stored as separate rows. There is
+    no semantic or fuzzy matching.
+    """
+    s = (text or "").strip().lower()
+    return re.sub(r"\s+", " ", s)
+
+
+def _question_row_exists(cur, exam, subject, chapter, diff_db, row_type, norm_text: str) -> bool:
+    """True if an identical (fingerprint) question already exists in this bucket."""
+    if not norm_text:
+        return True
+    cur.execute(
+        """
+        SELECT EXISTS (
+            SELECT 1 FROM questions
+            WHERE exam = %s
+              AND subject = %s
+              AND chapter IS NOT DISTINCT FROM %s
+              AND difficulty = %s
+              AND question_type = %s
+              AND lower(
+                    trim(
+                        both ' ' FROM regexp_replace(question_text, '[[:space:]]+', ' ', 'g')
+                    )
+                  ) = %s
+        )
+        """,
+        (exam, subject, chapter or None, diff_db, row_type, norm_text),
+    )
+    return cur.fetchone()[0]
+
+
+def save_questions(questions, q_type, difficulty, subject, exam, chapter: str = ""):
+    """
+    Persist generated questions into the matching columns (exam, subject, chapter,
+    question_text from AI "question", question_type, difficulty, options JSON,
+    correct_answer from "answer", explanation). Skips only when the question is
+    the same text as an existing row (after trim / case-fold / whitespace collapse);
+    paraphrases and indirect wordings are not treated as duplicates.
     """
     diff_db = _difficulty_for_db(difficulty)
+    chapter_db = chapter.strip() or None
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
             for q in questions:
+                qtext_raw = q.get("question") or ""
                 row_type = _question_type_for_db(q_type, q)
+                norm = _exact_question_fingerprint(qtext_raw)
+                if not norm:
+                    continue
+                if _question_row_exists(cur, exam, subject, chapter_db, diff_db, row_type, norm):
+                    continue
                 if row_type == "mcq" and q.get("options") is not None:
                     opts = json.dumps(q["options"])
                 else:
@@ -91,7 +143,7 @@ def save_questions(questions, q_type, difficulty, subject, exam, topic: str = ""
                 cur.execute(
                     """
                     INSERT INTO questions (
-                        exam, subject, topic, question_text, question_type,
+                        exam, subject, chapter, question_text, question_type,
                         difficulty, options, correct_answer, explanation
                     )
                     VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s)
@@ -99,8 +151,8 @@ def save_questions(questions, q_type, difficulty, subject, exam, topic: str = ""
                     (
                         exam,
                         subject,
-                        topic or None,
-                        q.get("question") or "",
+                        chapter_db,
+                        qtext_raw.strip(),
                         row_type,
                         diff_db,
                         opts,
@@ -122,7 +174,7 @@ def _row_to_api_item(row, for_mixed_pool: bool):
         _id,
         _exam,
         _subj,
-        _topic,
+        _chapter,
         question_text,
         qtype,
         _diff,
@@ -155,7 +207,7 @@ def _db_question_type_filter(q_type: str):
     return "question_type = %s", [q_type]
 
 
-def get_questions(q_type, difficulty, subject, exam, topic: str, limit):
+def get_questions(q_type, difficulty, subject, exam, chapter: str, limit):
     """
     Fetch up to `limit` questions matching filters. Returns list of dicts in API shape.
     For q_type 'mixed', matches rows with question_type mcq or short.
@@ -168,15 +220,15 @@ def get_questions(q_type, difficulty, subject, exam, topic: str, limit):
     try:
         with conn.cursor() as cur:
             type_sql, type_params = _db_question_type_filter(q_type)
-            topic_clause = "topic IS NOT DISTINCT FROM %s"
-            params = [exam, subject, topic or None, diff_db] + type_params + [limit]
+            chapter_clause = "chapter IS NOT DISTINCT FROM %s"
+            params = [exam, subject, chapter.strip() or None, diff_db] + type_params + [limit]
             cur.execute(
                 f"""
                 SELECT
-                    id, exam, subject, topic, question_text, question_type, difficulty,
+                    id, exam, subject, chapter, question_text, question_type, difficulty,
                     options, correct_answer, explanation, created_at
                 FROM questions
-                WHERE exam = %s AND subject = %s AND {topic_clause}
+                WHERE exam = %s AND subject = %s AND {chapter_clause}
                   AND difficulty = %s AND ({type_sql})
                 ORDER BY created_at DESC
                 LIMIT %s
@@ -302,13 +354,15 @@ async def generate(
     num_q: int = Form(...),
     subject: str = Form("general"),
     exam: str = Form("general"),
-    topic: str = Form(""),
+    chapter: str = Form(...),
 ):
     if num_q < 1:
         raise HTTPException(status_code=400, detail="num_q must be at least 1.")
+    if not chapter or not chapter.strip():
+        raise HTTPException(status_code=400, detail="chapter is required.")
 
     try:
-        cached = get_questions(q_type, difficulty, subject, exam, topic, num_q)
+        cached = get_questions(q_type, difficulty, subject, exam, chapter, num_q)
     except (OperationalError, DatabaseError) as e:
         logger.exception("Database error while reading questions cache")
         raise HTTPException(
@@ -398,7 +452,7 @@ CONTENT:
         return {"error": "AI response was not a JSON array", "raw": raw}
 
     try:
-        save_questions(data, q_type, difficulty, subject, exam, topic)
+        save_questions(data, q_type, difficulty, subject, exam, chapter)
     except (OperationalError, DatabaseError) as e:
         logger.exception("Database error while saving questions")
         raise HTTPException(
