@@ -34,6 +34,21 @@ export default function App() {
                 iconName = 'person';
               }
 
+              if (focused) {
+                return (
+                  <View style={{
+                    backgroundColor: '#2d5a5a',
+                    borderRadius: 28,
+                    width: 56,
+                    height: 56,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    marginBottom: 20,
+                  }}>
+                    <Icon name={iconName} size={32} color="#ffffff" />
+                  </View>
+                );
+              }
               return <Icon name={iconName} size={size} color={color} />;
             },
             tabBarActiveTintColor: '#ffffff',
