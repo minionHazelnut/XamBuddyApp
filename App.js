@@ -151,8 +151,8 @@ const CustomTabBar = ({state, descriptors, navigation}) => {
 const tabStyles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: '#e8ebe9',
-    borderTopColor: '#d0d4d2',
+    backgroundColor: '#ffffff',
+    borderTopColor: '#e8e8e8',
     borderTopWidth: 1,
     paddingBottom: 20,
     paddingTop: 10,

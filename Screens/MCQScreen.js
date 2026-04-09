@@ -230,7 +230,16 @@ const MCQScreen = ({navigation}) => {
 
             {/* Chapter cards */}
             {sectionChapters.map((chapter, index) => (
-              <TouchableOpacity key={index} style={styles.chapterCard}>
+              <TouchableOpacity
+                key={index}
+                style={styles.chapterCard}
+                onPress={() =>
+                  navigation.navigate('ChapterDetail', {
+                    subject: selectedSubject,
+                    chapter: chapter.name,
+                    questionCount: chapter.count,
+                  })
+                }>
                 <View style={{flex: 1}}>
                   <Text style={styles.chapterName}>{chapter.displayName}</Text>
                   <Text style={styles.chapterCount}>

@@ -8,6 +8,8 @@ import {
 } from 'react-native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import MCQScreen from './MCQScreen';
+import ChapterDetailScreen from './ChapterDetailScreen';
+import QuizScreen from './QuizScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -54,6 +56,8 @@ const PracticeScreen = () => {
     <Stack.Navigator screenOptions={{headerShown: false}}>
       <Stack.Screen name="PracticeHome" component={PracticeHome} />
       <Stack.Screen name="MCQ" component={MCQScreen} />
+      <Stack.Screen name="ChapterDetail" component={ChapterDetailScreen} />
+      <Stack.Screen name="Quiz" component={QuizScreen} />
     </Stack.Navigator>
   );
 };
