@@ -60,7 +60,8 @@ export default function App() {
             name="Home" 
             component={HomeScreen}
             options={{
-              title: 'XamBuddy',
+              headerTitle: 'XamBuddy',
+              tabBarLabel: 'Home',
               headerLeft: () => (
                 <Icon name="menu" size={24} color="#ffffff" style={{ marginLeft: 16 }} />
               ),

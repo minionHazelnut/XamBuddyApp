@@ -9,40 +9,47 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
-const HomeScreen = ({ navigation }) => {
+const HomeScreen = ({navigation}) => {
   return (
     <View style={styles.container}>
-      {/* Main Content */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Question of the Day Card */}
-        <LinearGradient
-          colors={['#a8e6cf', '#7fcdbb']}
-          style={styles.featuredCard}
-        >
-          <Text style={styles.featuredCardTitle}>Question Of The Day!</Text>
-        </LinearGradient>
+        <View style={styles.featuredCardWrapper}>
+          <LinearGradient
+            colors={['#c8f0df', '#e8f8f0']}
+            start={{x: 0, y: 0}}
+            end={{x: 1, y: 1}}
+            style={styles.featuredGradient}>
+            <Text style={styles.featuredCardTitle}>
+              Question Of The{'\n'}Day!
+            </Text>
+          </LinearGradient>
+        </View>
 
-        {/* Track Progress Card */}
-        <TouchableOpacity style={styles.card}>
-          <Text style={styles.cardTitle}>Track your progress</Text>
-          <View style={styles.cardArrow}>
-            <Icon name="arrow-upward" size={20} color="#4a5568" />
-            <Icon name="arrow-forward" size={20} color="#4a5568" />
+        {/* Row: Track Progress + Streak */}
+        <View style={styles.cardRow}>
+          <TouchableOpacity style={styles.trackCard}>
+            <Text style={styles.trackCardTitle}>
+              Track your{'\n'}progress
+            </Text>
+            <View style={styles.arrowContainer}>
+              <Icon name="north-east" size={22} color="#4a5568" />
+            </View>
+          </TouchableOpacity>
+
+          <View style={styles.streakCard}>
+            <Text style={styles.streakLabel}>Streak</Text>
+            <Text style={styles.streakNumber}>12</Text>
           </View>
-        </TouchableOpacity>
-
-        {/* Streak Card */}
-        <View style={styles.streakCard}>
-          <Text style={styles.streakLabel}>Streak</Text>
-          <Text style={styles.streakNumber}>12</Text>
         </View>
 
         {/* Before Exam Card */}
-        <TouchableOpacity style={styles.card}>
-          <Text style={styles.cardTitle}>Before Exam Formulas, Theorems & Diagrams</Text>
-          <View style={styles.cardArrow}>
-            <Icon name="arrow-upward" size={20} color="#4a5568" />
-            <Icon name="arrow-forward" size={20} color="#4a5568" />
+        <TouchableOpacity style={styles.examCard}>
+          <Text style={styles.examCardTitle}>
+            Before Exam{'\n'}Formulas, Theorems &{'\n'}Diagrams
+          </Text>
+          <View style={styles.arrowContainer}>
+            <Icon name="north-east" size={22} color="#4a5568" />
           </View>
         </TouchableOpacity>
       </ScrollView>
@@ -55,129 +62,86 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#1a3a3a',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#1a3a3a',
-  },
-  menuButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#ffffff',
-  },
-  headerSpacer: {
-    width: 40, // Same width as menu button to center title
-  },
   content: {
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 20,
   },
-  featuredCard: {
+  featuredCardWrapper: {
+    height: 180,
     borderRadius: 16,
-    padding: 24,
-    marginBottom: 20,
-    alignItems: 'center',
+    overflow: 'hidden',
+    marginBottom: 16,
+  },
+  featuredGradient: {
+    flex: 1,
     justifyContent: 'center',
-    minHeight: 120,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-    elevation: 8,
+    alignItems: 'center',
+    padding: 28,
   },
   featuredCardTitle: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: 'bold',
-    color: '#1a3a3a',
+    color: '#2d3748',
     textAlign: 'center',
   },
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
+  cardRow: {
+    flexDirection: 'row',
     marginBottom: 16,
+    gap: 12,
+  },
+  trackCard: {
+    flex: 1.2,
+    backgroundColor: '#f7f7f7',
+    borderRadius: 16,
+    padding: 18,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
   },
-  cardTitle: {
-    flex: 1,
+  trackCardTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#2d3748',
     lineHeight: 22,
   },
-  cardArrow: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    marginLeft: 12,
-  },
   streakCard: {
-    backgroundColor: '#ffffff',
+    flex: 0.8,
+    backgroundColor: '#f7f7f7',
     borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
+    padding: 18,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    justifyContent: 'center',
   },
   streakLabel: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: '#4a5568',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   streakNumber: {
     fontSize: 36,
     fontWeight: 'bold',
     color: '#2d3748',
   },
-  bottomNav: {
+  examCard: {
+    backgroundColor: '#f7f7f7',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
     flexDirection: 'row',
-    backgroundColor: '#1a3a3a',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#2d5a5a',
-  },
-  navItem: {
-    flex: 1,
     alignItems: 'center',
-    paddingVertical: 8,
+    justifyContent: 'space-between',
   },
-  navLabel: {
-    fontSize: 12,
-    color: '#a0aec0',
-    marginTop: 4,
-  },
-  navLabelActive: {
-    color: '#ffffff',
+  examCardTitle: {
+    flex: 1,
+    fontSize: 16,
     fontWeight: '600',
+    color: '#2d3748',
+    lineHeight: 22,
+  },
+  arrowContainer: {
+    marginLeft: 12,
   },
 });
 
