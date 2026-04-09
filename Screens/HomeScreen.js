@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import {FONTS, TEXT_COLORS} from '../lib/fonts';
 
 const HomeScreen = ({navigation}) => {
   return (
@@ -149,8 +150,8 @@ const styles = StyleSheet.create({
   },
   featuredCardTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2d3748',
+    fontFamily: FONTS.heading,
+    color: TEXT_COLORS.title,
     textAlign: 'center',
   },
   whitePanelWrapper: {
@@ -189,8 +190,8 @@ const styles = StyleSheet.create({
   },
   trackCardTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#2d3748',
+    fontFamily: FONTS.body,
+    color: TEXT_COLORS.title,
     lineHeight: 22,
   },
   streakCard: {
@@ -208,14 +209,14 @@ const styles = StyleSheet.create({
   },
   streakLabel: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#4a5568',
+    fontFamily: FONTS.body,
+    color: TEXT_COLORS.subtitle,
     marginBottom: 4,
   },
   streakNumber: {
     fontSize: 36,
-    fontWeight: 'bold',
-    color: '#2d3748',
+    fontFamily: FONTS.headingBold,
+    color: TEXT_COLORS.title,
   },
   examCard: {
     backgroundColor: '#ffffff',
@@ -234,8 +235,8 @@ const styles = StyleSheet.create({
   examCardTitle: {
     flex: 1,
     fontSize: 16,
-    fontWeight: '600',
-    color: '#2d3748',
+    fontFamily: FONTS.body,
+    color: TEXT_COLORS.title,
     lineHeight: 22,
   },
   arrowContainer: {

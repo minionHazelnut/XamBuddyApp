@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {supabase} from '../lib/supabase';
+import {FONTS, TEXT_COLORS} from '../lib/fonts';
 
 const OPTION_LABELS = ['A', 'B', 'C', 'D'];
 
@@ -347,6 +348,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 16,
     color: '#6a7a7a',
+    fontFamily: FONTS.body,
   },
   header: {
     flexDirection: 'row',
@@ -360,15 +362,15 @@ const styles = StyleSheet.create({
   },
   backArrow: {
     fontSize: 28,
-    color: '#2d3748',
+    color: TEXT_COLORS.title,
     fontWeight: '300',
   },
   headerTitle: {
     flex: 1,
     textAlign: 'center',
     fontSize: 22,
-    fontWeight: 'bold',
-    color: '#2d3748',
+    fontFamily: FONTS.headingBold,
+    color: TEXT_COLORS.title,
   },
   content: {
     flex: 1,
@@ -376,8 +378,8 @@ const styles = StyleSheet.create({
   },
   questionText: {
     fontSize: 19,
-    fontWeight: '600',
-    color: '#2d3748',
+    fontFamily: FONTS.bodyBold,
+    color: TEXT_COLORS.title,
     lineHeight: 28,
     marginBottom: 24,
   },
@@ -421,13 +423,13 @@ const styles = StyleSheet.create({
   },
   optionLabelText: {
     fontSize: 15,
-    fontWeight: '700',
-    color: '#2d3748',
+    fontFamily: FONTS.bodyBold,
+    color: TEXT_COLORS.title,
   },
   optionText: {
     fontSize: 16,
-    color: '#2d3748',
-    fontWeight: '500',
+    color: TEXT_COLORS.title,
+    fontFamily: FONTS.body,
     flex: 1,
   },
   statsRow: {
@@ -445,11 +447,12 @@ const styles = StyleSheet.create({
   statBadgeText: {
     fontSize: 14,
     color: '#8a9a9a',
+    fontFamily: FONTS.body,
   },
   explanationToggle: {
     fontSize: 16,
     color: '#4a6a6a',
-    fontWeight: '500',
+    fontFamily: FONTS.body,
     textAlign: 'center',
     paddingVertical: 8,
   },
@@ -462,6 +465,7 @@ const styles = StyleSheet.create({
   explanationText: {
     fontSize: 15,
     color: '#4a5568',
+    fontFamily: FONTS.body,
     lineHeight: 22,
   },
   bottomNav: {
@@ -519,8 +523,8 @@ const styles = StyleSheet.create({
   },
   scoreTitle: {
     fontSize: 26,
-    fontWeight: 'bold',
-    color: '#2d3748',
+    fontFamily: FONTS.headingBold,
+    color: TEXT_COLORS.title,
     marginBottom: 24,
   },
   scoreCircle: {
@@ -535,8 +539,8 @@ const styles = StyleSheet.create({
   },
   scorePercentage: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#2d3748',
+    fontFamily: FONTS.headingBold,
+    color: TEXT_COLORS.title,
   },
   scoreDetails: {
     backgroundColor: '#ffffff',
@@ -558,11 +562,12 @@ const styles = StyleSheet.create({
   scoreLabel: {
     fontSize: 16,
     color: '#6a7a7a',
+    fontFamily: FONTS.body,
   },
   scoreValue: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#2d3748',
+    fontFamily: FONTS.bodyBold,
+    color: TEXT_COLORS.title,
   },
   scoreDivider: {
     height: 1,

@@ -11,6 +11,7 @@ import {
   Text,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import {FONTS} from './lib/fonts';
 
 import HomeScreen from './Screens/HomeScreen';
 import QBankScreen from './Screens/QBankScreen';
@@ -184,7 +185,7 @@ const tabStyles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: FONTS.body,
     marginTop: 6,
   },
 });
@@ -204,7 +205,7 @@ export default function App() {
             },
             headerTintColor: '#ffffff',
             headerTitleStyle: {
-              fontWeight: 'bold',
+              fontFamily: FONTS.heading,
               fontSize: 22,
               color: '#ffffff',
             },

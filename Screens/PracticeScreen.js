@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
 } from 'react-native';
+import {FONTS, TEXT_COLORS} from '../lib/fonts';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import MCQScreen from './MCQScreen';
 import ChapterDetailScreen from './ChapterDetailScreen';
@@ -86,13 +87,14 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2d3748',
+    fontFamily: FONTS.headingBold,
+    color: TEXT_COLORS.title,
   },
   subtitle: {
     textAlign: 'center',
     fontSize: 16,
     color: '#8a9a9a',
+    fontFamily: FONTS.body,
     marginBottom: 30,
   },
   grid: {
@@ -117,7 +119,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 20,
-    fontWeight: '600',
+    fontFamily: FONTS.body,
     color: '#4a6a6a',
     lineHeight: 28,
   },

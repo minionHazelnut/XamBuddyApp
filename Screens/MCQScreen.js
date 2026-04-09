@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {supabase} from '../lib/supabase';
+import {FONTS, TEXT_COLORS} from '../lib/fonts';
 
 const FILTERS = ['All', 'Resume', 'Finished', 'Saved', 'Free'];
 
@@ -69,7 +70,7 @@ const circleStyles = StyleSheet.create({
   },
   text: {
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: FONTS.bodyBold,
     color: '#4a6a6a',
   },
   completedBadge: {
@@ -272,6 +273,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 16,
     color: '#6a7a7a',
+    fontFamily: FONTS.body,
   },
   header: {
     flexDirection: 'row',
@@ -285,15 +287,15 @@ const styles = StyleSheet.create({
   },
   backArrow: {
     fontSize: 28,
-    color: '#2d3748',
+    color: TEXT_COLORS.title,
     fontWeight: '300',
   },
   headerTitle: {
     flex: 1,
     textAlign: 'center',
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2d3748',
+    fontFamily: FONTS.headingBold,
+    color: TEXT_COLORS.title,
   },
   filterRow: {
     flexDirection: 'row',
@@ -304,11 +306,11 @@ const styles = StyleSheet.create({
   filterText: {
     fontSize: 16,
     color: '#8a9a9a',
-    fontWeight: '500',
+    fontFamily: FONTS.body,
   },
   filterTextActive: {
-    color: '#2d3748',
-    fontWeight: '700',
+    color: TEXT_COLORS.title,
+    fontFamily: FONTS.bodyBold,
   },
   filterUnderline: {
     height: 2,
@@ -337,6 +339,7 @@ const styles = StyleSheet.create({
   dropdownText: {
     fontSize: 16,
     color: '#8a9a9a',
+    fontFamily: FONTS.body,
   },
   dropdownItem: {
     backgroundColor: '#ffffff',
@@ -347,7 +350,8 @@ const styles = StyleSheet.create({
   },
   dropdownItemText: {
     fontSize: 16,
-    color: '#2d3748',
+    color: TEXT_COLORS.title,
+    fontFamily: FONTS.body,
   },
   section: {
     marginTop: 20,
@@ -365,8 +369,8 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 15,
-    color: '#6a7a7a',
-    fontWeight: '500',
+    color: TEXT_COLORS.subtitle,
+    fontFamily: FONTS.heading,
   },
   chapterCard: {
     backgroundColor: '#ffffff',
@@ -384,12 +388,13 @@ const styles = StyleSheet.create({
   },
   chapterName: {
     fontSize: 17,
-    color: '#2d3748',
-    fontWeight: '500',
+    color: TEXT_COLORS.title,
+    fontFamily: FONTS.body,
   },
   chapterCount: {
     fontSize: 13,
     color: '#8a9a9a',
+    fontFamily: FONTS.body,
     marginTop: 4,
   },
 });

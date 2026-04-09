@@ -8,6 +8,7 @@ import {
   ScrollView,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import {FONTS, TEXT_COLORS} from '../lib/fonts';
 
 const DIFFICULTIES = ['All', 'Easy', 'Medium', 'Hard'];
 
@@ -151,20 +152,21 @@ const styles = StyleSheet.create({
   },
   backArrow: {
     fontSize: 28,
-    color: '#2d3748',
+    color: TEXT_COLORS.title,
     fontWeight: '300',
   },
   headerTitle: {
     flex: 1,
     textAlign: 'center',
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2d3748',
+    fontFamily: FONTS.headingBold,
+    color: TEXT_COLORS.title,
   },
   chapterName: {
     textAlign: 'center',
     fontSize: 20,
     color: '#8a9a9a',
+    fontFamily: FONTS.heading,
     marginBottom: 20,
   },
   statsRow: {
@@ -176,7 +178,7 @@ const styles = StyleSheet.create({
   statText: {
     fontSize: 16,
     color: '#4a5568',
-    fontWeight: '500',
+    fontFamily: FONTS.body,
   },
   instructionsDivider: {
     flexDirection: 'row',
@@ -192,8 +194,8 @@ const styles = StyleSheet.create({
   },
   instructionsLabel: {
     fontSize: 15,
-    color: '#6a7a7a',
-    fontWeight: '500',
+    color: TEXT_COLORS.subtitle,
+    fontFamily: FONTS.body,
   },
   instructionsList: {
     paddingHorizontal: 30,
@@ -202,6 +204,7 @@ const styles = StyleSheet.create({
   instructionItem: {
     fontSize: 15,
     color: '#6a7a7a',
+    fontFamily: FONTS.body,
     lineHeight: 26,
   },
   dropdown: {
@@ -222,6 +225,7 @@ const styles = StyleSheet.create({
   dropdownText: {
     fontSize: 16,
     color: '#8a9a9a',
+    fontFamily: FONTS.body,
   },
   dropdownItem: {
     backgroundColor: '#ffffff',
@@ -233,7 +237,8 @@ const styles = StyleSheet.create({
   },
   dropdownItemText: {
     fontSize: 16,
-    color: '#2d3748',
+    color: TEXT_COLORS.title,
+    fontFamily: FONTS.body,
   },
   numQsCard: {
     backgroundColor: '#ffffff',
@@ -253,6 +258,7 @@ const styles = StyleSheet.create({
   numQsLabel: {
     fontSize: 16,
     color: '#8a9a9a',
+    fontFamily: FONTS.body,
   },
   numQsControls: {
     flexDirection: 'row',
@@ -274,8 +280,8 @@ const styles = StyleSheet.create({
   },
   numQsValue: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#2d3748',
+    fontFamily: FONTS.bodyBold,
+    color: TEXT_COLORS.title,
     minWidth: 30,
     textAlign: 'center',
   },
@@ -294,8 +300,8 @@ const styles = StyleSheet.create({
   },
   moduleName: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#2d3748',
+    fontFamily: FONTS.headingBold,
+    color: TEXT_COLORS.title,
     marginBottom: 16,
   },
   startButton: {
