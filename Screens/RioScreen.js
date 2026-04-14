@@ -15,7 +15,7 @@ const RioScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a3a3a',
+    backgroundColor: '#0f2040',
     justifyContent: 'center',
     alignItems: 'center',
   },

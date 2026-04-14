@@ -1,12 +1,6 @@
 import React, {useState, useEffect, useMemo} from 'react';
-import {
-  SafeAreaView,
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-} from 'react-native';
+import {View, Text, StyleSheet, TouchableOpacity, ScrollView} from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {FONTS, TEXT_COLORS} from '../lib/fonts';
 
@@ -42,6 +36,12 @@ const getDateKey = date => date.toISOString().split('T')[0];
 
 const getDayDifference = (earlier, later) =>
   Math.round((later - earlier) / (1000 * 60 * 60 * 24));
+
+const getBarColor = accuracy => {
+  if (accuracy >= 80) return '#22c55e';
+  if (accuracy >= 50) return '#f59e0b';
+  return '#ef4444';
+};
 
 const ProgressScreen = ({navigation}) => {
   const [history, setHistory] = useState([]);
@@ -79,6 +79,8 @@ const ProgressScreen = ({navigation}) => {
     return date;
   }, []);
 
+  const todayKey = getDateKey(today);
+
   const dailyHistory = useMemo(() => {
     const grouped = {};
     history.forEach(entry => {
@@ -113,6 +115,23 @@ const ProgressScreen = ({navigation}) => {
       .map(entry => ({...entry, dateObj: parseDateKey(entry.date)}))
       .sort((a, b) => a.dateObj - b.dateObj);
   }, [history]);
+
+  const practicedDays = useMemo(
+    () => new Set(dailyHistory.map(e => e.date)),
+    [dailyHistory],
+  );
+
+  const weekDays = useMemo(() => {
+    const dayOfWeek = today.getDay();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - ((dayOfWeek + 6) % 7));
+    monday.setHours(0, 0, 0, 0);
+    return Array.from({length: 7}, (_, i) => {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      return d;
+    });
+  }, [today]);
 
   const activeStreakEntries = useMemo(() => {
     if (dailyHistory.length === 0) return [];
@@ -172,19 +191,31 @@ const ProgressScreen = ({navigation}) => {
           summaryDays.length,
       )
     : 0;
-  const strongestTopic = summaryDays.length
-    ? summaryDays[summaryDays.length - 1].strongestTopic
-    : '-';
-  const weakTopic = summaryDays.length
-    ? summaryDays[summaryDays.length - 1].weakTopic
-    : '-';
 
-  const actionLabel = displayEntries.length
-    ? 'Come back tomorrow!'
-    : "Start today’s practice";
-  const noteLabel = displayEntries.length
-    ? 'You have recent progress. Keep the momentum going.'
-    : 'Practice now to see live results!';
+  const practicedToday = practicedDays.has(todayKey);
+  const lastEntry = dailyHistory.length
+    ? dailyHistory[dailyHistory.length - 1]
+    : null;
+  const daysSinceLast = lastEntry
+    ? getDayDifference(lastEntry.dateObj, today)
+    : Infinity;
+  const streakAlive = daysSinceLast <= 1;
+
+  const actionLabel = practicedToday
+    ? 'Maintain my streak'
+    : streakAlive
+    ? 'Don\'t break your streak'
+    : 'Start a new streak';
+  const noteLabel = practicedToday
+    ? 'Great work! You practiced today. Keep the momentum going.'
+    : streakAlive
+    ? 'Practice once today to keep your streak alive.'
+    : 'Practice now to start building your streak.';
+  const actionButtonColor = practicedToday
+    ? '#16a34a'
+    : streakAlive
+    ? '#d97706'
+    : '#4c8cff';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -198,22 +229,52 @@ const ProgressScreen = ({navigation}) => {
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.chartCard}>
-          <View style={styles.chartHeader}>
-            <Text style={styles.chartTitle}>Last 3 days performance</Text>
+          <Text style={styles.chartTitle}>Last 3 days performance</Text>
+
+          {/* 7-day dot calendar */}
+          <View style={styles.weekCalendar}>
+            {weekDays.map((day, i) => {
+              const key = getDateKey(day);
+              const practiced = practicedDays.has(key);
+              const isToday = key === todayKey;
+              return (
+                <View key={i} style={styles.weekCol}>
+                  <Text style={styles.weekDayLabel}>
+                    {day.toLocaleDateString('en-US', {weekday: 'short'}).slice(0, 1)}
+                  </Text>
+                  <View
+                    style={[
+                      styles.weekDot,
+                      practiced && styles.weekDotFilled,
+                      isToday && !practiced && styles.weekDotToday,
+                    ]}
+                  />
+                </View>
+              );
+            })}
           </View>
+
+          {/* Bar chart */}
           <View style={styles.chartArea}>
-            <View style={styles.yAxisLine} />
             <View style={styles.barsRow}>
               {barItems.map((item, index) => {
                 const height = item.placeholder
-                  ? 80
+                  ? 60
                   : 50 + (item.correct / Math.max(item.total, 1)) * 120;
-                const barStyle = item.placeholder
-                  ? styles.barPlaceholder
-                  : styles.barActive;
                 return (
                   <View key={index} style={styles.barColumn}>
-                    <View style={[styles.bar, barStyle, {height}]} />
+                    <Text style={styles.barAccuracyLabel}>
+                      {item.placeholder ? '' : `${item.accuracy}%`}
+                    </Text>
+                    <View
+                      style={[
+                        styles.bar,
+                        item.placeholder
+                          ? styles.barPlaceholder
+                          : {backgroundColor: getBarColor(item.accuracy)},
+                        {height},
+                      ]}
+                    />
                     <Text style={styles.barLabel}>
                       {item.placeholder ? '-' : formatDayLabel(item.dateObj)}
                     </Text>
@@ -225,7 +286,7 @@ const ProgressScreen = ({navigation}) => {
         </View>
 
         <TouchableOpacity
-          style={styles.actionButton}
+          style={[styles.actionButton, {backgroundColor: actionButtonColor}]}
           onPress={() => navigation.navigate('Practice')}>
           <Text style={styles.actionText}>{actionLabel}</Text>
           <Icon name="east" size={20} color="#ffffff" />
@@ -234,29 +295,21 @@ const ProgressScreen = ({navigation}) => {
 
         <View style={styles.detailsCard}>
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Last 3 days Average</Text>
+            <Text style={styles.detailLabel}>3-day avg score</Text>
             <Text style={styles.detailValue}>
-              {summaryDays.length ? `${averageScore}/20` : '--/20'}
+              {summaryDays.length ? `${averageScore} correct` : '--'}
             </Text>
           </View>
+          <View style={styles.detailDivider} />
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Accuracy</Text>
+            <Text style={styles.detailLabel}>3-day avg accuracy</Text>
             <Text style={styles.detailValue}>
               {summaryDays.length ? `${averageAccuracy}%` : '--%'}
             </Text>
           </View>
+          <View style={styles.detailDivider} />
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Strongest topic</Text>
-            <Text style={[styles.detailValue, styles.topicValue]}>
-              {strongestTopic}
-            </Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Weak topic</Text>
-            <Text style={[styles.detailValue, styles.topicValue]}>{weakTopic}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Average time taken</Text>
+            <Text style={styles.detailLabel}>3-day avg time</Text>
             <Text style={styles.detailValue}>
               {summaryDays.length ? `${averageTime} mins` : '-- mins'}
             </Text>
@@ -318,18 +371,40 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: FONTS.headingBold,
     color: TEXT_COLORS.title,
+    marginBottom: 16,
+  },
+  weekCalendar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  weekCol: {
+    alignItems: 'center',
+    gap: 6,
+  },
+  weekDayLabel: {
+    fontSize: 11,
+    fontFamily: FONTS.body,
+    color: '#94a3b8',
+  },
+  weekDot: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#cbd5e1',
+    backgroundColor: 'transparent',
+  },
+  weekDotFilled: {
+    backgroundColor: '#22c55e',
+    borderColor: '#22c55e',
+  },
+  weekDotToday: {
+    borderColor: '#4c8cff',
+    borderWidth: 2,
   },
   chartArea: {
-    height: 220,
     justifyContent: 'flex-end',
-  },
-  yAxisLine: {
-    position: 'absolute',
-    left: 20,
-    top: 12,
-    bottom: 24,
-    width: 1,
-    backgroundColor: '#cbd5e1',
   },
   barsRow: {
     flexDirection: 'row',
@@ -341,22 +416,26 @@ const styles = StyleSheet.create({
     width: 50,
     alignItems: 'center',
   },
-  bar: {
-    width: 20,
-    borderRadius: 12,
-    marginBottom: 10,
+  barAccuracyLabel: {
+    fontSize: 11,
+    fontFamily: FONTS.body,
+    color: '#334155',
+    height: 16,
+    textAlign: 'center',
+    marginBottom: 4,
   },
-  barActive: {
-    backgroundColor: '#4c8cff',
+  bar: {
+    width: 22,
+    borderRadius: 12,
   },
   barPlaceholder: {
-    backgroundColor: 'rgba(76, 140, 255, 0.25)',
+    backgroundColor: '#e2e8f0',
   },
   barLabel: {
     fontSize: 12,
     color: '#64748b',
     fontFamily: FONTS.body,
-    marginTop: 6,
+    marginTop: 8,
   },
   actionButton: {
     flexDirection: 'row',
@@ -394,8 +473,12 @@ const styles = StyleSheet.create({
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 18,
+    alignItems: 'center',
+    paddingVertical: 14,
+  },
+  detailDivider: {
+    height: 1,
+    backgroundColor: '#f1f5f9',
   },
   detailLabel: {
     fontSize: 14,
@@ -408,11 +491,6 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.headingBold,
     color: TEXT_COLORS.title,
     textAlign: 'right',
-    width: 120,
-  },
-  topicValue: {
-    color: '#4a5568',
-    width: 140,
   },
 });
 

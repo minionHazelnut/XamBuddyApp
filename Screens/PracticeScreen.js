@@ -138,7 +138,7 @@ const PracticeHome = ({navigation}) => {
           style={styles.heroCard}
           onPress={() => navigation.navigate('MCQ')}>
           <LinearGradient
-            colors={['#3c8c89', '#2d5a5a']}
+            colors={['#3b82f6', '#1e4080']}
             start={{x: 0, y: 0}}
             end={{x: 1, y: 1}}
             style={styles.heroGradient}>
@@ -162,7 +162,7 @@ const PracticeHome = ({navigation}) => {
             style={styles.miniCard}
             onPress={() => navigation.navigate('ShortAnswersSelect')}>
             <View style={styles.miniIconWrap}>
-              <Icon name="short-text" size={26} color="#2d5a5a" />
+              <Icon name="short-text" size={26} color="#1e4080" />
             </View>
             <Text style={styles.miniCardTitle}>Short{'\n'}Answers</Text>
             <Icon name="north_east" size={18} color="#94a3b8" />
@@ -173,7 +173,7 @@ const PracticeHome = ({navigation}) => {
             style={styles.miniCard}
             onPress={() => navigation.navigate('LongAnswersSelect')}>
             <View style={styles.miniIconWrap}>
-              <Icon name="article" size={26} color="#2d5a5a" />
+              <Icon name="article" size={26} color="#1e4080" />
             </View>
             <Text style={styles.miniCardTitle}>Long{'\n'}Answers</Text>
             <Icon name="north_east" size={18} color="#94a3b8" />
@@ -528,7 +528,7 @@ const PracticeScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#EBFFF4',
+    backgroundColor: '#EBF4FF',
   },
   practiceHeader: {
     paddingHorizontal: 24,
@@ -616,7 +616,7 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 14,
-    backgroundColor: '#dff0ea',
+    backgroundColor: '#dde8ff',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 14,
@@ -672,7 +672,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   optionActive: {
-    backgroundColor: '#e2f0ef',
+    backgroundColor: '#EBF4FF',
     borderWidth: 1,
     borderColor: '#2d5a5a',
     borderRadius: 14,
@@ -722,7 +722,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   dropdownItemActive: {
-    backgroundColor: '#e2f0ef',
+    backgroundColor: '#EBF4FF',
   },
   dropdownItemText: {
     fontSize: 15,
@@ -751,8 +751,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   pillActive: {
-    backgroundColor: '#2d5a5a',
-    borderColor: '#2d5a5a',
+    backgroundColor: '#1e4080',
+    borderColor: '#1e4080',
   },
   pillText: {
     fontSize: 14,
@@ -765,7 +765,7 @@ const styles = StyleSheet.create({
   },
   searchButton: {
     marginTop: 24,
-    backgroundColor: '#2d5a5a',
+    backgroundColor: '#1e4080',
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',

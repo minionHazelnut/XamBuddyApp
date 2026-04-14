@@ -372,9 +372,7 @@ const HomeScreen = ({navigation, onSignOut}) => {
 
       <ScrollView showsVerticalScrollIndicator={false}>
         <LinearGradient
-          colors={['#3b82f6', '#6366f1', '#818cf8']}
-          start={{x: 0, y: 0}}
-          end={{x: 1, y: 1}}
+          colors={['#1e4080', '#1e4080']}
           style={styles.topSection}>
           <View style={styles.headerRow}>
             <TouchableOpacity onPress={() => setMenuOpen(true)} style={styles.hamburgerButton}>
@@ -575,9 +573,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 4},
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    elevation: 10,
   },
   featuredCard: {
     height: 180,

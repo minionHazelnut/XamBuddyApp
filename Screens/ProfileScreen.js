@@ -18,7 +18,7 @@ const ProfileScreen = ({user, onSignOut}) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a3a3a',
+    backgroundColor: '#0f2040',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -38,7 +38,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 12,
-    backgroundColor: '#2d5a5a',
+    backgroundColor: '#1e4080',
   },
   buttonText: {
     color: '#ffffff',

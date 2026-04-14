@@ -18,33 +18,7 @@ const CATEGORIES = [
   {key: 'past_year_papers', label: 'Past year papers'},
   {key: 'sample_papers', label: 'Sample papers'},
 ];
-const FALLBACK_PAST_YEAR = ['2023-24', '2022-23', '2021-22', '2020-21'];
-const FALLBACK_SAMPLE_PAPERS = ['2024', '2023', '2022', '2021'];
-
-const parsePaperYear = year => {
-  if (!year) return 0;
-  const yearString = String(year).trim();
-  const match = yearString.match(/(\d{4})/g);
-  if (!match?.length) return 0;
-  return Math.max(...match.map(num => Number(num)));
-};
-
-const sortPapers = papers => {
-  return papers.slice().sort((a, b) => {
-    const aYear = parsePaperYear(a.year);
-    const bYear = parsePaperYear(b.year);
-    if (aYear !== bYear) return bYear - aYear;
-    if (a.created_at && b.created_at) {
-      return new Date(b.created_at) - new Date(a.created_at);
-    }
-    return 0;
-  });
-};
-
-const getFallbackItems = category => {
-  const fallbackYears = category === 'sample_papers' ? FALLBACK_SAMPLE_PAPERS : FALLBACK_PAST_YEAR;
-  return fallbackYears.map(year => ({year, title: `${year} paper`, url: null}));
-};
+const FALLBACK_YEARS = ['2023-24', '2022-23', '2021-22', '2020-21'];
 
 const QBankScreen = () => {
   const [activeCategory, setActiveCategory] = useState(CATEGORIES[0].key);
@@ -65,13 +39,11 @@ const QBankScreen = () => {
         .order('year', {ascending: false});
 
       if (error) {
-        console.warn('Paper fetch error:', error);
         setPapers([]);
       } else {
-        setPapers(sortPapers(data || []));
+        setPapers(data || []);
       }
     } catch (err) {
-      console.warn('Paper fetch exception:', err);
       setPapers([]);
     }
     setLoading(false);
@@ -85,11 +57,14 @@ const QBankScreen = () => {
         return;
       }
     }
-    Alert.alert('Coming soon', 'This paper will be available shortly. Check back once it\'s uploaded.');
+
+    Alert.alert(
+      'Paper unavailable',
+      'This paper is not uploaded yet. Add a URL to the paper record in your Supabase `papers` table.',
+    );
   };
 
-  const hasRealPapers = papers.length > 0;
-  const items = hasRealPapers ? papers : getFallbackItems(activeCategory);
+  const items = papers.length > 0 ? papers : FALLBACK_YEARS.map(year => ({year, title: `${year} paper`, url: null}));
 
   return (
     <SafeAreaView style={styles.container}>
@@ -120,43 +95,32 @@ const QBankScreen = () => {
             <ActivityIndicator size="large" color="#4a6a6a" />
             <Text style={styles.infoText}>Loading papers...</Text>
           </View>
-        ) : (
-          <>
-            {!hasRealPapers && (
-              <View style={styles.comingSoonBanner}>
-                <Icon name="schedule" size={18} color="#4a6a6a" />
-                <Text style={styles.comingSoonText}>
-                  Papers will appear here as soon as they're added to your library.
-                </Text>
+        ) : items.length > 0 ? (
+          items.map((paper, index) => (
+            <TouchableOpacity
+              key={`${paper.year}-${index}`}
+              style={styles.paperCard}
+              onPress={() => handleOpenPaper(paper)}
+              activeOpacity={0.8}
+            >
+              <View style={styles.cardLeft}>
+                <Text style={styles.paperYear}>{paper.year}</Text>
+                <Text style={styles.paperTitle}>{paper.title}</Text>
               </View>
-            )}
-            {items.map((paper, index) => (
-              <TouchableOpacity
-                key={`${paper.year}-${index}`}
-                style={[styles.paperCard, !paper.url && styles.paperCardPlaceholder]}
-                onPress={() => handleOpenPaper(paper)}
-                activeOpacity={paper.url ? 0.8 : 0.6}
-              >
-                <View style={styles.cardLeft}>
-                  <Text style={[styles.paperYear, !paper.url && styles.paperYearPlaceholder]}>
-                    {paper.year}
-                  </Text>
-                  <Text style={[styles.paperTitle, !paper.url && styles.paperTitlePlaceholder]}>
-                    {paper.url ? paper.title : 'Coming soon'}
-                  </Text>
-                </View>
-                <View style={[styles.statusBadge, paper.url ? styles.statusBadgeReady : styles.statusBadgeSoon]}>
-                  <Icon
-                    name={paper.url ? 'open-in-new' : 'hourglass-empty'}
-                    size={16}
-                    color={paper.url ? '#2d5a5a' : '#718096'}
-                  />
-                </View>
-              </TouchableOpacity>
-            ))}
-          </>
+              <Icon
+                name={paper.url ? 'open-in-new' : 'cloud-upload'}
+                size={24}
+                color={paper.url ? '#2d3748' : '#718096'}
+              />
+            </TouchableOpacity>
+          ))
+        ) : (
+          <View style={styles.centered}>
+            <Text style={styles.infoText}>No papers uploaded yet for this category.</Text>
+          </View>
         )}
       </ScrollView>
+
     </SafeAreaView>
   );
 };
@@ -164,7 +128,7 @@ const QBankScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#EBFFF4',
+    backgroundColor: '#EBF4FF',
   },
   header: {
     paddingHorizontal: 20,
@@ -185,7 +149,7 @@ const styles = StyleSheet.create({
   filterRow: {
     flexDirection: 'row',
     paddingHorizontal: 20,
-    marginBottom: 12,
+    marginBottom: 40,
     gap: 10,
   },
   filterButton: {
@@ -198,8 +162,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   filterButtonActive: {
-    backgroundColor: '#3c8c89',
-    borderColor: '#3c8c89',
+    backgroundColor: '#1e4080',
+    borderColor: '#1e4080',
   },
   filterButtonText: {
     fontSize: 14,
@@ -299,6 +263,29 @@ const styles = StyleSheet.create({
   },
   statusBadgeSoon: {
     backgroundColor: '#f1f5f9',
+  },
+  errorText: {
+    fontSize: 14,
+    fontFamily: FONTS.body,
+    color: '#e53e3e',
+    textAlign: 'center',
+  },
+  noteBox: {
+    margin: 16,
+    borderRadius: 16,
+    padding: 16,
+  },
+  noteTitle: {
+    fontSize: 14,
+    fontFamily: FONTS.headingBold,
+    color: '#2d3748',
+    marginBottom: 6,
+  },
+  noteText: {
+    fontSize: 13,
+    fontFamily: FONTS.body,
+    color: TEXT_COLORS.subtitle,
+    lineHeight: 18,
   },
 });
 

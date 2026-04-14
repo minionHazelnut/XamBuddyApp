@@ -183,7 +183,7 @@ const tabStyles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#2d5a5a',
+    backgroundColor: '#1e4080',
   },
   tab: {
     flex: 1,
@@ -515,7 +515,7 @@ const authStyles = StyleSheet.create({
     fontFamily: FONTS.body,
   },
   button: {
-    backgroundColor: '#2d5a5a',
+    backgroundColor: '#1e4080',
     borderRadius: 12,
     paddingVertical: 14,
     marginTop: 20,
@@ -537,12 +537,12 @@ const authStyles = StyleSheet.create({
   },
   selectedOption: {
     borderWidth: 1,
-    borderColor: '#2d5a5a',
+    borderColor: '#1e4080',
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 16,
     marginBottom: 10,
-    backgroundColor: '#e2f0ef',
+    backgroundColor: '#EBF4FF',
   },
   optionText: {
     fontSize: 15,
@@ -592,7 +592,7 @@ const authStyles = StyleSheet.create({
     marginTop: 12,
   },
   textButtonText: {
-    color: '#2d5a5a',
+    color: '#1e4080',
     fontSize: 14,
     fontFamily: FONTS.body,
   },
