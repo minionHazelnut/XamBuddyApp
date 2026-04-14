@@ -1,6 +1,7 @@
 import React, {useRef, useState} from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
+import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {
   StyleSheet,
   View,
@@ -17,18 +18,29 @@ import {FONTS} from './lib/fonts';
 import {supabase} from './lib/supabase';
 
 import HomeScreen from './Screens/HomeScreen';
+import ProgressScreen from './Screens/ProgressScreen';
 import QBankScreen from './Screens/QBankScreen';
 import PracticeScreen from './Screens/PracticeScreen';
 import RioScreen from './Screens/RioScreen';
 import ProfileScreen from './Screens/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
+const HomeStack = createNativeStackNavigator();
+
+const HomeStackScreen = ({onSignOut}) => (
+  <HomeStack.Navigator screenOptions={{headerShown: false}}>
+    <HomeStack.Screen name="HomeMain">
+      {props => <HomeScreen {...props} onSignOut={onSignOut} />}
+    </HomeStack.Screen>
+    <HomeStack.Screen name="Progress" component={ProgressScreen} />
+  </HomeStack.Navigator>
+);
 
 const TAB_ICONS = {
   Home: 'home',
   QBank: 'book',
   Practice: 'assignment',
-  Rio: 'auto-awesome',
+  Rio: 'auto_awesome',
   Profile: 'person',
 };
 
@@ -196,7 +208,7 @@ const tabStyles = StyleSheet.create({
   },
 });
 
-function AuthScreen({onSignIn}) {
+function AuthScreen({onSignIn, localAuth, setLocalAuth}) {
   const [mode, setMode] = useState('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -228,42 +240,75 @@ function AuthScreen({onSignIn}) {
 
     setMessage(mode === 'signin' ? 'Signing in...' : 'Creating account...');
 
-    let result;
-    if (mode === 'signin') {
-      result = await supabase.auth.signInWithPassword({
+    try {
+      let result;
+      if (mode === 'signin') {
+        result = await supabase.auth.signInWithPassword({
+          email: email.trim().toLowerCase(),
+          password: password.trim(),
+        });
+
+        if (result.error) {
+          if (
+            localAuth &&
+            email.trim().toLowerCase() === localAuth.email &&
+            password.trim() === localAuth.password
+          ) {
+            const signedInUser = localAuth.user ?? null;
+            setSupabaseUser(signedInUser);
+            onSignIn({
+              email: email.trim().toLowerCase(),
+              board: localAuth.board ?? selectedBoard,
+              studentClass: localAuth.studentClass ?? selectedClass,
+              user: signedInUser,
+            });
+            return;
+          }
+
+          setMessage(result.error.message || 'Authentication failed.');
+          return;
+        }
+
+        const signedInUser = result.data?.user ?? result.data?.session?.user ?? null;
+        setSupabaseUser(signedInUser);
+        onSignIn({
+          email: email.trim().toLowerCase(),
+          board: selectedBoard,
+          studentClass: selectedClass,
+          user: signedInUser,
+        });
+        return;
+      }
+
+      result = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password: password.trim(),
       });
 
       if (result.error) {
-        setMessage(result.error.message || 'Authentication failed.');
+        setMessage(result.error.message || 'Signup failed.');
         return;
       }
 
-      setSupabaseUser(result.data?.user ?? result.data?.session?.user ?? null);
+      const createdUser = result.data?.user ?? result.data?.session?.user;
+      const authUser = createdUser ?? {email: email.trim().toLowerCase(), pending: true};
+      setSupabaseUser(authUser);
+      setLocalAuth({
+        email: email.trim().toLowerCase(),
+        password: password.trim(),
+        user: authUser,
+        board: selectedBoard,
+        studentClass: selectedClass,
+      });
       setStage('chooseBoard');
-      setMessage('Signed in. Choose your board.');
-      return;
+      setMessage(
+        createdUser
+          ? 'Account created. Choose your board.'
+          : 'Account created. Choose your board and verify your email if required.',
+      );
+    } catch (error) {
+      setMessage(error?.message || 'Unexpected auth error.');
     }
-
-    result = await supabase.auth.signUp({
-      email: email.trim().toLowerCase(),
-      password: password.trim(),
-    });
-
-    if (result.error) {
-      setMessage(result.error.message || 'Signup failed.');
-      return;
-    }
-
-    const createdUser = result.data?.user ?? result.data?.session?.user;
-    setSupabaseUser(createdUser ?? {email: email.trim().toLowerCase(), pending: true});
-    setStage('chooseBoard');
-    setMessage(
-      createdUser
-        ? 'Account created. Choose your board.'
-        : 'Account created. Choose your board and verify your email if required.',
-    );
   };
 
   const toggleMode = () => {
@@ -295,7 +340,7 @@ function AuthScreen({onSignIn}) {
   };
 
   return (
-    <ScrollView contentContainerStyle={authStyles.container} keyboardShouldPersistTaps="handled">
+    <ScrollView contentContainerStyle={authStyles.container} keyboardShouldPersistTaps="always">
       <Text style={authStyles.title}>
         XamBuddy {mode === 'signin' ? 'Sign In' : 'Sign Up'}
       </Text>
@@ -562,6 +607,7 @@ const authStyles = StyleSheet.create({
 
 export default function App() {
   const [user, setUser] = useState(null);
+  const [localAuth, setLocalAuth] = useState(null);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -590,42 +636,13 @@ export default function App() {
             }}>
             <Tab.Screen
               name="Home"
-              component={HomeScreen}
               options={{
                 headerTitle: 'XamBuddy',
                 tabBarLabel: 'Home',
-                headerLeft: () => (
-                  <View
-                    style={{marginLeft: 16, justifyContent: 'center', gap: 5}}>
-                    <View
-                      style={{
-                        width: 24,
-                        height: 2.5,
-                        backgroundColor: '#ffffff',
-                        borderRadius: 2,
-                      }}
-                    />
-                    <View
-                      style={{
-                        width: 16,
-                        height: 2.5,
-                        backgroundColor: '#ffffff',
-                        borderRadius: 2,
-                      }}
-                    />
-                    <View
-                      style={{
-                        width: 24,
-                        height: 2.5,
-                        backgroundColor: '#ffffff',
-                        borderRadius: 2,
-                      }}
-                    />
-                  </View>
-                ),
-                headerRight: () => <View style={{width: 40}} />,
-              }}
-            />
+                headerShown: false,
+              }}>
+              {props => <HomeStackScreen {...props} onSignOut={handleSignOut} />}
+            </Tab.Screen>
             <Tab.Screen
               name="QBank"
               component={QBankScreen}
@@ -652,7 +669,7 @@ export default function App() {
             </Tab.Screen>
           </Tab.Navigator>
         ) : (
-          <AuthScreen onSignIn={setUser} />
+          <AuthScreen onSignIn={setUser} localAuth={localAuth} setLocalAuth={setLocalAuth} />
         )}
       </View>
     </NavigationContainer>

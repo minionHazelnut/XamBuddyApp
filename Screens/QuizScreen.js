@@ -12,6 +12,33 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import {supabase} from '../lib/supabase';
 import {FONTS, TEXT_COLORS} from '../lib/fonts';
 
+let AsyncStorage;
+try {
+  AsyncStorage = require('@react-native-async-storage/async-storage').default;
+} catch (error) {
+  AsyncStorage = null;
+  console.warn('AsyncStorage unavailable:', error?.message || error);
+}
+
+const safeGetItem = async key => {
+  if (!AsyncStorage) return null;
+  try {
+    return await AsyncStorage.getItem(key);
+  } catch (error) {
+    console.warn('AsyncStorage getItem failed:', error?.message || error);
+    return null;
+  }
+};
+
+const safeSetItem = async (key, value) => {
+  if (!AsyncStorage) return;
+  try {
+    await AsyncStorage.setItem(key, value);
+  } catch (error) {
+    console.warn('AsyncStorage setItem failed:', error?.message || error);
+  }
+};
+
 const OPTION_LABELS = ['A', 'B', 'C', 'D'];
 
 const QuizScreen = ({navigation, route}) => {
@@ -24,6 +51,7 @@ const QuizScreen = ({navigation, route}) => {
   const [loading, setLoading] = useState(true);
   const [bookmarked, setBookmarked] = useState(false);
   const [quizFinished, setQuizFinished] = useState(false);
+  const [startTime, setStartTime] = useState(Date.now());
 
   const chapterDisplay = chapter.replace(/^\d+\.\s*/, '');
 
@@ -33,6 +61,7 @@ const QuizScreen = ({navigation, route}) => {
 
   const fetchQuestions = async () => {
     setLoading(true);
+    setStartTime(Date.now());
     let query = supabase
       .from('questions')
       .select('*')
@@ -63,13 +92,14 @@ const QuizScreen = ({navigation, route}) => {
     setAnswers(prev => ({...prev, [currentIndex]: optionKey}));
   };
 
-  const goNext = () => {
+  const goNext = async () => {
     if (currentIndex < questions.length - 1) {
       setCurrentIndex(currentIndex + 1);
       setSelectedAnswer(answers[currentIndex + 1] || null);
       setShowExplanation(false);
       setBookmarked(false);
     } else {
+      await saveQuizResult();
       setQuizFinished(true);
     }
   };
@@ -95,12 +125,78 @@ const QuizScreen = ({navigation, route}) => {
     return {correct, attempted, total: questions.length};
   };
 
+  const saveQuizResult = async () => {
+    const {correct, attempted, total} = getScore();
+    const now = new Date();
+    const date = now.toISOString().split('T')[0];
+    const timeMins = Math.max(1, Math.round((Date.now() - startTime) / 60000));
+    const accuracy = attempted > 0 ? Math.round((correct / attempted) * 100) : 0;
+    const entry = {
+      date,
+      subject,
+      chapter,
+      difficulty,
+      correct,
+      wrong: attempted - correct,
+      attempted,
+      total,
+      accuracy,
+      timeMins,
+      strongestTopic: chapter,
+      weakTopic: attempted - correct > 0 ? chapter : subject,
+      timestamp: now.toISOString(),
+    };
+
+    if (!AsyncStorage) {
+      console.warn('Skipping quiz progress save because AsyncStorage is unavailable.');
+      return;
+    }
+
+    try {
+      const stored = await safeGetItem('quizProgressHistory');
+      const history = stored ? JSON.parse(stored) : [];
+      const existingIndex = history.findIndex(item => item.date === date);
+
+      if (existingIndex >= 0) {
+        const existing = history[existingIndex];
+        const combinedAttempted = existing.attempted + attempted;
+        const combinedCorrect = existing.correct + correct;
+        const combinedTotal = existing.total + total;
+        history[existingIndex] = {
+          ...existing,
+          subject,
+          chapter,
+          difficulty,
+          correct: combinedCorrect,
+          wrong: existing.wrong + entry.wrong,
+          attempted: combinedAttempted,
+          total: combinedTotal,
+          accuracy:
+            combinedAttempted > 0
+              ? Math.round((combinedCorrect / combinedAttempted) * 100)
+              : 0,
+          timeMins: Math.round((existing.timeMins + timeMins) / 2),
+          strongestTopic: chapter,
+          weakTopic: attempted - correct > 0 ? chapter : subject,
+          timestamp: now.toISOString(),
+        };
+      } else {
+        history.push(entry);
+      }
+
+      await safeSetItem('quizProgressHistory', JSON.stringify(history));
+    } catch (error) {
+      console.warn('Error saving quiz progress:', error?.message || error);
+    }
+  };
+
   const retakeQuiz = () => {
     setCurrentIndex(0);
     setSelectedAnswer(null);
     setAnswers({});
     setShowExplanation(false);
     setQuizFinished(false);
+    setStartTime(Date.now());
   };
 
   const getOptionStyle = optionKey => {

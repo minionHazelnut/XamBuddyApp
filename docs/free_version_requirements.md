@@ -11,7 +11,7 @@
 3. MCQ Answers + Explanations
    - Makes them feel they're actually learning, not just guessing. Keeps session quality high.
 
-4. Long Answer - 3 per chapter with self assessment
+4. Long Answer - 3 per chapterasy mediums andith self assessment
    - Shows the quality of your content. Plants the upgrade desire without forcing it.
 
 5. 7-day Streak Tracker
