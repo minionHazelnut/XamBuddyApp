@@ -4,13 +4,12 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   ScrollView,
   ActivityIndicator,
   Linking,
   Alert,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {supabase} from '../lib/supabase';
 import {FONTS, TEXT_COLORS} from '../lib/fonts';
@@ -19,13 +18,38 @@ const CATEGORIES = [
   {key: 'past_year_papers', label: 'Past year papers'},
   {key: 'sample_papers', label: 'Sample papers'},
 ];
-const FALLBACK_YEARS = ['2023-24', '2022-23', '2021-22', '2020-21'];
+const FALLBACK_PAST_YEAR = ['2023-24', '2022-23', '2021-22', '2020-21'];
+const FALLBACK_SAMPLE_PAPERS = ['2024', '2023', '2022', '2021'];
+
+const parsePaperYear = year => {
+  if (!year) return 0;
+  const yearString = String(year).trim();
+  const match = yearString.match(/(\d{4})/g);
+  if (!match?.length) return 0;
+  return Math.max(...match.map(num => Number(num)));
+};
+
+const sortPapers = papers => {
+  return papers.slice().sort((a, b) => {
+    const aYear = parsePaperYear(a.year);
+    const bYear = parsePaperYear(b.year);
+    if (aYear !== bYear) return bYear - aYear;
+    if (a.created_at && b.created_at) {
+      return new Date(b.created_at) - new Date(a.created_at);
+    }
+    return 0;
+  });
+};
+
+const getFallbackItems = category => {
+  const fallbackYears = category === 'sample_papers' ? FALLBACK_SAMPLE_PAPERS : FALLBACK_PAST_YEAR;
+  return fallbackYears.map(year => ({year, title: `${year} paper`, url: null}));
+};
 
 const QBankScreen = () => {
   const [activeCategory, setActiveCategory] = useState(CATEGORIES[0].key);
   const [papers, setPapers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
   useEffect(() => {
     fetchPapers();
@@ -33,7 +57,6 @@ const QBankScreen = () => {
 
   const fetchPapers = async () => {
     setLoading(true);
-    setError('');
     try {
       const {data, error} = await supabase
         .from('papers')
@@ -42,15 +65,13 @@ const QBankScreen = () => {
         .order('year', {ascending: false});
 
       if (error) {
-        console.error('Paper fetch error:', error);
-        setError('Unable to load papers right now.');
+        console.warn('Paper fetch error:', error);
         setPapers([]);
       } else {
-        setPapers(data || []);
+        setPapers(sortPapers(data || []));
       }
     } catch (err) {
-      console.error('Paper fetch exception:', err);
-      setError('Unable to load papers right now.');
+      console.warn('Paper fetch exception:', err);
       setPapers([]);
     }
     setLoading(false);
@@ -64,14 +85,11 @@ const QBankScreen = () => {
         return;
       }
     }
-
-    Alert.alert(
-      'Paper unavailable',
-      'This paper is not uploaded yet. Add a URL to the paper record in your Supabase `papers` table.',
-    );
+    Alert.alert('Coming soon', 'This paper will be available shortly. Check back once it\'s uploaded.');
   };
 
-  const items = papers.length > 0 ? papers : FALLBACK_YEARS.map(year => ({year, title: `${year} paper`, url: null}));
+  const hasRealPapers = papers.length > 0;
+  const items = hasRealPapers ? papers : getFallbackItems(activeCategory);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -102,45 +120,43 @@ const QBankScreen = () => {
             <ActivityIndicator size="large" color="#4a6a6a" />
             <Text style={styles.infoText}>Loading papers...</Text>
           </View>
-        ) : error ? (
-          <View style={styles.centered}>
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-        ) : items.length > 0 ? (
-          items.map((paper, index) => (
-            <TouchableOpacity
-              key={`${paper.year}-${index}`}
-              style={styles.paperCard}
-              onPress={() => handleOpenPaper(paper)}
-              activeOpacity={0.8}
-            >
-              <View style={styles.cardLeft}>
-                <Text style={styles.paperYear}>{paper.year}</Text>
-                <Text style={styles.paperTitle}>{paper.title}</Text>
-              </View>
-              <Icon
-                name={paper.url ? 'open-in-new' : 'cloud-upload'}
-                size={24}
-                color={paper.url ? '#2d3748' : '#718096'}
-              />
-            </TouchableOpacity>
-          ))
         ) : (
-          <View style={styles.centered}>
-            <Text style={styles.infoText}>No papers uploaded yet for this category.</Text>
-          </View>
+          <>
+            {!hasRealPapers && (
+              <View style={styles.comingSoonBanner}>
+                <Icon name="schedule" size={18} color="#4a6a6a" />
+                <Text style={styles.comingSoonText}>
+                  Papers will appear here as soon as they're added to your library.
+                </Text>
+              </View>
+            )}
+            {items.map((paper, index) => (
+              <TouchableOpacity
+                key={`${paper.year}-${index}`}
+                style={[styles.paperCard, !paper.url && styles.paperCardPlaceholder]}
+                onPress={() => handleOpenPaper(paper)}
+                activeOpacity={paper.url ? 0.8 : 0.6}
+              >
+                <View style={styles.cardLeft}>
+                  <Text style={[styles.paperYear, !paper.url && styles.paperYearPlaceholder]}>
+                    {paper.year}
+                  </Text>
+                  <Text style={[styles.paperTitle, !paper.url && styles.paperTitlePlaceholder]}>
+                    {paper.url ? paper.title : 'Coming soon'}
+                  </Text>
+                </View>
+                <View style={[styles.statusBadge, paper.url ? styles.statusBadgeReady : styles.statusBadgeSoon]}>
+                  <Icon
+                    name={paper.url ? 'open-in-new' : 'hourglass-empty'}
+                    size={16}
+                    color={paper.url ? '#2d5a5a' : '#718096'}
+                  />
+                </View>
+              </TouchableOpacity>
+            ))}
+          </>
         )}
       </ScrollView>
-
-      <LinearGradient
-        colors={['#f2fdf7', '#EBFFF4']}
-        style={styles.noteBox}
-      >
-        <Text style={styles.noteTitle}>Upload provision</Text>
-        <Text style={styles.noteText}>
-          Add records in Supabase `papers` table with category `past_year_papers` or `sample_papers`, year, title, and URL.
-        </Text>
-      </LinearGradient>
     </SafeAreaView>
   );
 };
@@ -240,33 +256,49 @@ const styles = StyleSheet.create({
     color: TEXT_COLORS.subtitle,
     textAlign: 'center',
   },
-  errorText: {
-    fontSize: 15,
-    fontFamily: FONTS.body,
-    color: '#c53030',
-    textAlign: 'center',
+  comingSoonBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#f0faf6',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#c6e8db',
   },
-  noteBox: {
-    borderRadius: 18,
-    margin: 20,
-    padding: 18,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 3},
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  noteTitle: {
-    fontSize: 15,
-    fontFamily: FONTS.heading,
-    color: '#2d3748',
-    marginBottom: 8,
-  },
-  noteText: {
+  comingSoonText: {
+    flex: 1,
     fontSize: 13,
     fontFamily: FONTS.body,
-    color: TEXT_COLORS.subtitle,
-    lineHeight: 20,
+    color: '#4a6a6a',
+    lineHeight: 18,
+  },
+  paperCardPlaceholder: {
+    backgroundColor: '#f8fafb',
+    shadowOpacity: 0.04,
+    elevation: 1,
+  },
+  paperYearPlaceholder: {
+    color: '#94a3b8',
+  },
+  paperTitlePlaceholder: {
+    color: '#b0bec5',
+    fontStyle: 'italic',
+  },
+  statusBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statusBadgeReady: {
+    backgroundColor: '#dff0ea',
+  },
+  statusBadgeSoon: {
+    backgroundColor: '#f1f5f9',
   },
 });
 

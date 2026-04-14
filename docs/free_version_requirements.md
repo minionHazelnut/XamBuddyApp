@@ -24,54 +24,55 @@
 
 ## Current Implementation Status
 
-### Implemented / partially implemented
-- `HomeScreen.js` contains UI placeholders for:
-  - "Question Of The Day" card
-  - "Track your progress" card
-  - "Streak" card showing a static value (`12`)
-  - "Before Exam Formulas, Theorems & Diagrams" card
-- `App.js` defines the main bottom-tab navigation structure with tabs for Home, QBank, Practice, Rio, and Profile.
-- `PracticeScreen.js` contains a practice home flow and a nested stack with `MCQ`, `ChapterDetail`, and `Quiz` screens.
-- `MCQScreen.js` uses Supabase and fetches `subject`/`chapter` for MCQ questions from the `questions` table.
-- `QuizScreen.js` fetches MCQ questions from Supabase and supports answer selection, explanation toggle, quiz navigation, and score summary.
+### Implemented / fully done
+
+#### Auth + Onboarding (`App.js`)
+- Sign in / sign up with email/password via Supabase (local auth fallback included).
+- Post-signup multi-stage flow: board selection (CBSE, Karnataka PU, Other) → grade selection (10th, 12th, Other).
+
+#### Question Of The Day — QOTD (`HomeScreen.js`) ✅
+- **Card:** Teal gradient featured card on HomeScreen. Tap triggers animated expand.
+- **Overlay (inline, not a separate screen):** Card animates from its measured position to fill the full screen (position, size, borderRadius all animated via `Animated.parallel`).
+- **Question fetch:** Pulls a random easy MCQ from Supabase `questions` table (filters `question_type = mcq`, `difficulty = easy`, picks random from top 20).
+- **Persistence:** Today's question + chosen answer + feedback saved to AsyncStorage (`qotdState` key) with a date key. Re-opening the same day restores the saved state — same question shown all day.
+- **Answer flow:** A/B/C/D options shown with letter badges. After tap, correct option turns green; wrong selection turns red. Options disabled after answering.
+- **Post-answer:** "Back to home" button appears. Overlay closes with reverse animation back to card position.
+- **Error/loading states:** Activity indicator while loading; error message if Supabase fetch fails.
+
+#### QBank (`QBankScreen.js`) ✅
+- Past Year Papers + Sample Papers tabs.
+- Fetches from Supabase `papers` table (by category + year descending). Falls back to placeholder years when table is empty.
+- Opens paper URL via `Linking`. Alert if no URL attached.
+
+#### Practice (`PracticeScreen.js`, `MCQScreen.js`, `QuizScreen.js`) ✅
+- Nested stack: Practice home → ChapterDetail → MCQ/Quiz.
+- Questions fetched from Supabase `questions` table.
+- QuizScreen: answer selection, explanation toggle, score summary. Writes completed quiz result to AsyncStorage (`quizProgressHistory`).
+
+#### Past 3 Days Performance Analytics (`ProgressScreen.js`) ✅
+- Accessible from HomeScreen "Track your progress" card (via HomeStack navigator).
+- Reads `quizProgressHistory` from AsyncStorage; aggregates per-day stats (correct, wrong, attempted, accuracy, timeMins, topics).
+- Shows 3-bar chart for last 3 active days (with placeholder bars for missing days).
+- Summary card: 3-day average score, accuracy, time, strongest/weak topic.
+- CTA button navigates to Practice tab.
 
 ### Not implemented / gaps
-- Board / Class / Subject signup personalization flow
-  - No signup or onboarding screen exists in the current source.
-  - No subject or board selection data model is present.
-
-- Sample Papers (Latest 1)
-  - No dedicated screen or content for sample papers is implemented.
-  - `QBankScreen.js` remains a placeholder.
-
-- MCQ Answers + Explanations
-  - Partial implementation exists in `QuizScreen.js`, but there is no complete question engine or user progress tracking.
-  - No persistence of answers, explanation history, or feedback state across sessions.
-
-- Long Answer content and self-assessment
-  - No long-answer chapter content screens or assessment workflows are implemented.
-
-- 7-day Streak Tracker
-  - Only a static streak card exists on `HomeScreen.js`.
-  - No actual streak persistence, date tracking, or daily completion logic.
-
-- Past 3 days’ performance analytics
-  - No analytics dashboard or performance summary UI exists.
-  - No scoring history, streak analytics, or charting implementation.
+- **7-day Streak Tracker** — HomeScreen still shows static `12`. No date tracking, persistence, or daily completion logic.
+- **Long answer content and self-assessment** — no screens or data model.
+- **ProfileScreen** — placeholder only.
+- **RioScreen** — placeholder only.
+- **Shared user context** — board/class from login lives only in App.js state; not passed to child screens.
+- **Supabase quiz persistence** — quiz results stored in AsyncStorage only; not written to Supabase.
 
 ### Backend / Supabase status
-- Supabase is configured in `lib/supabase.js` with a public anon key and project URL.
-- Active Supabase usage is limited to MCQ question fetching in `MCQScreen.js` and `QuizScreen.js`.
-- There is no Supabase auth, user profile data, or persistent progress storage in the current code.
-
-### Structural gaps
-- `QBankScreen.js`, `RioScreen.js`, and `ProfileScreen.js` are placeholders.
-- `PracticeScreen.js` is partially implemented but lacks end-to-end free-version workflows for sample papers and analytics.
-- No shared user state management or backend persistence beyond question loading.
+- Supabase configured in `lib/supabase.js`.
+- Active usage: auth (sign in/sign up), `questions` table (QOTD, MCQ, Quiz), `papers` table (QBank).
+- Quiz results and QOTD state stored in AsyncStorage only — not persisted to Supabase.
 
 ### Recommended next steps
-1. Implement onboarding/signup flow with board/class/subject selection.
-2. Add data models for questions, sample papers, long answer content, and user performance.
-3. Build `QBank`, `Practice`, `Profile`, and `Rio` screens around the free-version feature set.
-4. Replace static `Streak` content with real date tracking, completion logic, and daily streak persistence.
-5. Add a performance analytics view for the last 3 days and persist quiz results to Supabase.
+1. Build real 7-day streak tracker with AsyncStorage date tracking and daily completion logic.
+2. Build Long Answer content screens and self-assessment workflow.
+3. Implement ProfileScreen.
+4. Implement RioScreen.
+5. Add board/class context (React Context or similar) so child screens can read the user’s board/class.
+6. Persist quiz results to Supabase for cross-device history.
