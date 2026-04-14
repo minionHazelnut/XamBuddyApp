@@ -371,7 +371,11 @@ const HomeScreen = ({navigation, onSignOut}) => {
       </Modal>
 
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.topSection}>
+        <LinearGradient
+          colors={['#3b82f6', '#6366f1', '#818cf8']}
+          start={{x: 0, y: 0}}
+          end={{x: 1, y: 1}}
+          style={styles.topSection}>
           <View style={styles.headerRow}>
             <TouchableOpacity onPress={() => setMenuOpen(true)} style={styles.hamburgerButton}>
               <Icon name="menu" size={26} color="#ffffff" />
@@ -392,12 +396,12 @@ const HomeScreen = ({navigation, onSignOut}) => {
               style={styles.featuredCardWrapper}
             >
               <LinearGradient
-                colors={['#7ae5d9', '#3c8c89', '#dff9f2']}
+                colors={['#EBF4FF', '#EBF4FF', '#EBF4FF']}
                 start={{x: 0, y: 0}}
                 end={{x: 1, y: 1}}
                 style={styles.featuredCard}
               >
-                <Text style={styles.featuredCardTitle}>Question Of The{"\n"}Day!</Text>
+                <Text style={styles.featuredCardTitle}>Question Of The Day!</Text>
                 <Text style={styles.featuredCardSubtitle}>Tap to answer a fresh easy question.</Text>
               </LinearGradient>
             </TouchableOpacity>
@@ -405,16 +409,16 @@ const HomeScreen = ({navigation, onSignOut}) => {
 
           <View style={styles.whitePanelWrapper}>
             <LinearGradient
-              colors={['#ffffff', '#EBFFF4']}
+              colors={['#ffffff', '#ffffff']}
               start={{x: 0.5, y: 0}}
               end={{x: 0.5, y: 1}}
               style={styles.whitePanel}
             />
           </View>
-        </View>
+        </LinearGradient>
 
         <LinearGradient
-          colors={['#f2fdf7', '#EBFFF4']}
+          colors={['#ffffff', '#EBF4FF']}
           style={styles.bottomSection}>
           <View style={styles.cardRow}>
             <TouchableOpacity
@@ -422,7 +426,6 @@ const HomeScreen = ({navigation, onSignOut}) => {
               onPress={() => navigation.navigate('Progress')}>
               <Text style={styles.trackCardTitle}>
                 Track your{"\n"}progress
-'}progress
               </Text>
               <View style={styles.arrowContainer}>
                 <Icon name="north_east" size={22} color="#4a5568" />
@@ -468,7 +471,7 @@ const HomeScreen = ({navigation, onSignOut}) => {
             ]}
           />
           <LinearGradient
-            colors={['#ffffff', '#ebfff4']}
+            colors={['#ffffff', '#ebf4ff']}
             style={styles.qotdInner}
           >
             <View style={styles.qotdHeader}>
@@ -519,10 +522,9 @@ const HomeScreen = ({navigation, onSignOut}) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#EBFFF4',
+    backgroundColor: '#EBF4FF',
   },
   topSection: {
-    backgroundColor: '#5e7070',
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 0,
@@ -559,7 +561,7 @@ const styles = StyleSheet.create({
     width: 400,
     height: 350,
     borderRadius: 180,
-    backgroundColor: 'rgba(235,255,244,0.35)',
+    backgroundColor: 'transparent',
     pointerEvents: 'none',
   },
   featuredCardOuter: {
@@ -568,37 +570,40 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   featuredCardWrapper: {
-    width: '70%',
+    width: '85%',
+    backgroundColor: '#EBF4FF',
+    borderRadius: 16,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 4},
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.1,
     shadowRadius: 8,
-    elevation: 6,
+    elevation: 4,
   },
   featuredCard: {
-    height: 160,
+    height: 180,
     borderRadius: 16,
     justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     padding: 28,
   },
   featuredCardTitle: {
     fontSize: 24,
     fontFamily: FONTS.heading,
-    color: TEXT_COLORS.title,
-    textAlign: 'center',
+    color: '#000000',
+    textAlign: 'left',
     marginBottom: 10,
   },
   featuredCardSubtitle: {
     fontSize: 14,
     fontFamily: FONTS.body,
-    color: TEXT_COLORS.subtitle,
-    textAlign: 'center',
+    color: 'rgba(0,0,0,0.6)',
+    textAlign: 'left',
     marginTop: 4,
   },
   whitePanelWrapper: {
     marginHorizontal: -20,
-    height: 60,
+    marginTop: -50,
+    height: 110,
     borderTopLeftRadius: 70,
     overflow: 'hidden',
     zIndex: 1,
@@ -907,7 +912,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: '#e6f7f0',
+    backgroundColor: '#dde8ff',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
@@ -963,7 +968,7 @@ const styles = StyleSheet.create({
   },
   qotdActionButton: {
     marginTop: 18,
-    backgroundColor: '#2f855a',
+    backgroundColor: '#1e4080',
     borderRadius: 16,
     paddingVertical: 14,
     alignItems: 'center',
