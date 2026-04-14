@@ -1,13 +1,8 @@
 import React, {useMemo, useState} from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  SafeAreaView,
-  ScrollView,
-} from 'react-native';
+import {View, Text, StyleSheet, TouchableOpacity, ScrollView} from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import LinearGradient from 'react-native-linear-gradient';
 import {FONTS, TEXT_COLORS} from '../lib/fonts';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import MCQScreen from './MCQScreen';
@@ -129,39 +124,62 @@ const SHORT_ANSWER_DATA = [
 ];
 
 const PracticeHome = ({navigation}) => {
-  const cards = [
-    {title: 'Target Weak\nAreas', screen: null},
-    {title: 'MCQ\nPractice', screen: 'MCQ'},
-    {title: 'Short\nAnswers', screen: 'ShortAnswersSelect'},
-    {title: 'Long\nAnswers', screen: 'LongAnswersSelect'},
-  ];
-
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}>
-          <Text style={styles.backArrow}>{'<'}</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Practice</Text>
-        <View style={styles.backButton} />
+      <View style={styles.practiceHeader}>
+        <Text style={styles.practiceTitle}>Practice</Text>
+        <Text style={styles.practiceSubtitle}>Making Practice Fun</Text>
       </View>
-      <Text style={styles.subtitle}>Making Practice Fun</Text>
 
-      {/* Cards Grid */}
-      <View style={styles.grid}>
-        {cards.map((card, index) => (
+      <ScrollView contentContainerStyle={styles.practiceContent}>
+        {/* Hero — MCQ Practice */}
+        <TouchableOpacity
+          activeOpacity={0.85}
+          style={styles.heroCard}
+          onPress={() => navigation.navigate('MCQ')}>
+          <LinearGradient
+            colors={['#3c8c89', '#2d5a5a']}
+            start={{x: 0, y: 0}}
+            end={{x: 1, y: 1}}
+            style={styles.heroGradient}>
+            <View style={styles.heroIconWrap}>
+              <Icon name="assignment" size={28} color="#ffffff" />
+            </View>
+            <Text style={styles.heroCardTitle}>MCQ Practice</Text>
+            <Text style={styles.heroCardSubtitle}>
+              Test your knowledge with multiple choice questions
+            </Text>
+            <View style={styles.heroArrow}>
+              <Icon name="arrow-forward" size={20} color="#ffffff" />
+            </View>
+          </LinearGradient>
+        </TouchableOpacity>
+
+        {/* Short + Long Answers */}
+        <View style={styles.miniCardRow}>
           <TouchableOpacity
-            key={index}
-            style={styles.card}
-            activeOpacity={0.7}
-            onPress={() => card.screen && navigation.navigate(card.screen)}>
-            <Text style={styles.cardTitle}>{card.title}</Text>
+            activeOpacity={0.85}
+            style={styles.miniCard}
+            onPress={() => navigation.navigate('ShortAnswersSelect')}>
+            <View style={styles.miniIconWrap}>
+              <Icon name="short-text" size={26} color="#2d5a5a" />
+            </View>
+            <Text style={styles.miniCardTitle}>Short{'\n'}Answers</Text>
+            <Icon name="north_east" size={18} color="#94a3b8" />
           </TouchableOpacity>
-        ))}
-      </View>
+
+          <TouchableOpacity
+            activeOpacity={0.85}
+            style={styles.miniCard}
+            onPress={() => navigation.navigate('LongAnswersSelect')}>
+            <View style={styles.miniIconWrap}>
+              <Icon name="article" size={26} color="#2d5a5a" />
+            </View>
+            <Text style={styles.miniCardTitle}>Long{'\n'}Answers</Text>
+            <Icon name="north_east" size={18} color="#94a3b8" />
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -186,7 +204,6 @@ const LongAnswersSelect = ({navigation}) => {
   const [difficulty, setDifficulty] = useState('Easy');
   const [subjectOpen, setSubjectOpen] = useState(false);
   const [chapterOpen, setChapterOpen] = useState(false);
-  const [difficultyOpen, setDifficultyOpen] = useState(false);
   const difficulties = ['Easy', 'Medium', 'Difficult'];
 
   return (
@@ -195,7 +212,7 @@ const LongAnswersSelect = ({navigation}) => {
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}>
-          <Text style={styles.backArrow}>{'<'}</Text>
+          <Icon name="arrow-back" size={24} color="#2d3748" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Long Answers</Text>
         <View style={styles.backButton} />
@@ -226,14 +243,22 @@ const LongAnswersSelect = ({navigation}) => {
           onSelect={item => setChapter(item)}
         />
 
-        <DropdownSelector
-          label="Select Difficulty Level"
-          options={difficulties}
-          selected={difficulty}
-          open={difficultyOpen}
-          onToggle={() => setDifficultyOpen(prev => !prev)}
-          onSelect={item => setDifficulty(item)}
-        />
+        <View style={styles.difficultyGroup}>
+          <Text style={styles.formLabel}>Difficulty</Text>
+          <View style={styles.pillRow}>
+            {difficulties.map(d => (
+              <TouchableOpacity
+                key={d}
+                style={[styles.pill, difficulty === d && styles.pillActive]}
+                onPress={() => setDifficulty(d)}
+                activeOpacity={0.75}>
+                <Text style={[styles.pillText, difficulty === d && styles.pillTextActive]}>
+                  {d}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
 
         <TouchableOpacity
           style={styles.searchButton}
@@ -266,7 +291,7 @@ const LongAnswersList = ({navigation, route}) => {
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}>
-          <Text style={styles.backArrow}>{'<'}</Text>
+          <Icon name="arrow-back" size={24} color="#2d3748" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Long Answers</Text>
         <View style={styles.backButton} />
@@ -302,7 +327,7 @@ const LongAnswerDetail = ({navigation, route}) => {
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}>
-          <Text style={styles.backArrow}>{'<'}</Text>
+          <Icon name="arrow-back" size={24} color="#2d3748" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Long Answers</Text>
         <View style={styles.backButton} />
@@ -341,7 +366,6 @@ const ShortAnswersSelect = ({navigation}) => {
   const [difficulty, setDifficulty] = useState('Easy');
   const [subjectOpen, setSubjectOpen] = useState(false);
   const [chapterOpen, setChapterOpen] = useState(false);
-  const [difficultyOpen, setDifficultyOpen] = useState(false);
   const difficulties = ['Easy', 'Medium', 'Difficult'];
 
   return (
@@ -350,7 +374,7 @@ const ShortAnswersSelect = ({navigation}) => {
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}>
-          <Text style={styles.backArrow}>{'<'}</Text>
+          <Icon name="arrow-back" size={24} color="#2d3748" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Short Answers</Text>
         <View style={styles.backButton} />
@@ -381,14 +405,22 @@ const ShortAnswersSelect = ({navigation}) => {
           onSelect={item => setChapter(item)}
         />
 
-        <DropdownSelector
-          label="Select Difficulty Level"
-          options={difficulties}
-          selected={difficulty}
-          open={difficultyOpen}
-          onToggle={() => setDifficultyOpen(prev => !prev)}
-          onSelect={item => setDifficulty(item)}
-        />
+        <View style={styles.difficultyGroup}>
+          <Text style={styles.formLabel}>Difficulty</Text>
+          <View style={styles.pillRow}>
+            {difficulties.map(d => (
+              <TouchableOpacity
+                key={d}
+                style={[styles.pill, difficulty === d && styles.pillActive]}
+                onPress={() => setDifficulty(d)}
+                activeOpacity={0.75}>
+                <Text style={[styles.pillText, difficulty === d && styles.pillTextActive]}>
+                  {d}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
 
         <TouchableOpacity
           style={styles.searchButton}
@@ -421,7 +453,7 @@ const ShortAnswersList = ({navigation, route}) => {
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}>
-          <Text style={styles.backArrow}>{'<'}</Text>
+          <Icon name="arrow-back" size={24} color="#2d3748" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Short Answers</Text>
         <View style={styles.backButton} />
@@ -457,7 +489,7 @@ const ShortAnswerDetail = ({navigation, route}) => {
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}>
-          <Text style={styles.backArrow}>{'<'}</Text>
+          <Icon name="arrow-back" size={24} color="#2d3748" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Short Answers</Text>
         <View style={styles.backButton} />
@@ -496,7 +528,105 @@ const PracticeScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#EBFFF4',
+  },
+  practiceHeader: {
+    paddingHorizontal: 24,
+    paddingTop: 28,
+    paddingBottom: 20,
+  },
+  practiceTitle: {
+    fontSize: 28,
+    fontFamily: FONTS.heading,
+    color: TEXT_COLORS.title,
+  },
+  practiceSubtitle: {
+    marginTop: 4,
+    fontSize: 14,
+    fontFamily: FONTS.body,
+    color: TEXT_COLORS.subtitle,
+  },
+  practiceContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+  },
+  heroCard: {
+    borderRadius: 24,
+    overflow: 'hidden',
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 6},
+    shadowOpacity: 0.15,
+    shadowRadius: 14,
+    elevation: 6,
+  },
+  heroGradient: {
+    padding: 28,
+    minHeight: 190,
+  },
+  heroIconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  heroCardTitle: {
+    fontSize: 24,
+    fontFamily: FONTS.headingBold,
+    color: '#ffffff',
+    marginBottom: 8,
+  },
+  heroCardSubtitle: {
+    fontSize: 14,
+    fontFamily: FONTS.body,
+    color: 'rgba(255,255,255,0.8)',
+    lineHeight: 20,
+  },
+  heroArrow: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  miniCardRow: {
+    flexDirection: 'row',
+    gap: 14,
+  },
+  miniCard: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    padding: 20,
+    minHeight: 160,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  miniIconWrap: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    backgroundColor: '#dff0ea',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  miniCardTitle: {
+    fontSize: 16,
+    fontFamily: FONTS.heading,
+    color: TEXT_COLORS.title,
+    lineHeight: 23,
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
@@ -507,11 +637,6 @@ const styles = StyleSheet.create({
   },
   backButton: {
     width: 40,
-  },
-  backArrow: {
-    fontSize: 28,
-    color: '#2d3748',
-    fontWeight: '300',
   },
   headerTitle: {
     flex: 1,
@@ -526,32 +651,6 @@ const styles = StyleSheet.create({
     color: '#8a9a9a',
     fontFamily: FONTS.body,
     marginBottom: 30,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 20,
-    gap: 16,
-    justifyContent: 'center',
-  },
-  card: {
-    width: '45%',
-    aspectRatio: 0.85,
-    backgroundColor: '#e8f5ee',
-    borderRadius: 16,
-    padding: 20,
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  cardTitle: {
-    fontSize: 20,
-    fontFamily: FONTS.body,
-    color: '#4a6a6a',
-    lineHeight: 28,
   },
   formSection: {
     paddingHorizontal: 20,
@@ -633,6 +732,35 @@ const styles = StyleSheet.create({
   dropdownItemTextActive: {
     fontSize: 15,
     color: '#0f172a',
+    fontFamily: FONTS.heading,
+  },
+  difficultyGroup: {
+    marginBottom: 20,
+  },
+  pillRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  pill: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+  },
+  pillActive: {
+    backgroundColor: '#2d5a5a',
+    borderColor: '#2d5a5a',
+  },
+  pillText: {
+    fontSize: 14,
+    fontFamily: FONTS.body,
+    color: '#334155',
+  },
+  pillTextActive: {
+    color: '#ffffff',
     fontFamily: FONTS.heading,
   },
   searchButton: {
