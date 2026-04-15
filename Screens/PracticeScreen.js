@@ -138,7 +138,7 @@ const PracticeHome = ({navigation}) => {
           style={styles.heroCard}
           onPress={() => navigation.navigate('MCQ')}>
           <LinearGradient
-            colors={['#3b82f6', '#1e4080']}
+            colors={['#1e4080', '#1e4080']}
             start={{x: 0, y: 0}}
             end={{x: 1, y: 1}}
             style={styles.heroGradient}>
@@ -179,6 +179,14 @@ const PracticeHome = ({navigation}) => {
             <Icon name="north_east" size={18} color="#94a3b8" />
           </TouchableOpacity>
         </View>
+
+        {/* Upload Notes */}
+        <Text style={styles.uploadHeading}>Generate from your own notes</Text>
+        <TouchableOpacity style={styles.uploadButton} activeOpacity={0.85}>
+          <Text style={styles.uploadButtonText}>
+            Upload your own notes.{'\n'}Generate MCQs, short and long answers!
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -584,6 +592,7 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.body,
     color: 'rgba(255,255,255,0.8)',
     lineHeight: 20,
+    paddingRight: 52,
   },
   heroArrow: {
     position: 'absolute',
@@ -599,6 +608,71 @@ const styles = StyleSheet.create({
   miniCardRow: {
     flexDirection: 'row',
     gap: 14,
+    marginBottom: 16,
+  },
+  uploadSection: {
+    backgroundColor: '#161b27',
+    paddingHorizontal: 20,
+    paddingTop: 22,
+    paddingBottom: 24,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  uploadSectionLabel: {
+    fontSize: 11,
+    fontFamily: FONTS.headingBold,
+    color: '#6b7280',
+    letterSpacing: 1.2,
+    marginBottom: 16,
+  },
+  uploadDiveWrap: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    minHeight: 120,
+  },
+  uploadDiveContent: {
+    padding: 16,
+    gap: 12,
+  },
+  uploadBlurLine: {
+    height: 12,
+    backgroundColor: '#9ca3af',
+    borderRadius: 6,
+  },
+  uploadDiveOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(22, 27, 39, 0.75)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  uploadButton: {
+    backgroundColor: 'transparent',
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#1e4080',
+    alignItems: 'center',
+  },
+  uploadHeading: {
+    fontSize: 18,
+    fontFamily: FONTS.headingBold,
+    fontWeight: '900',
+    color: '#1e4080',
+    marginTop: 16,
+    marginBottom: 24,
+  },
+  uploadButtonText: {
+    fontSize: 14,
+    fontFamily: FONTS.headingBold,
+    color: '#1e4080',
+    textAlign: 'center',
+    lineHeight: 20,
   },
   miniCard: {
     flex: 1,

@@ -4,10 +4,10 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {supabase} from '../lib/supabase';
 import {FONTS, TEXT_COLORS} from '../lib/fonts';
@@ -600,7 +600,7 @@ const styles = StyleSheet.create({
     color: '#2d3748',
   },
   navButtonFinish: {
-    backgroundColor: '#5a7a7a',
+    backgroundColor: '#1e4080',
   },
   navButtonFinishText: {
     fontSize: 17,
@@ -628,7 +628,7 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 60,
     borderWidth: 6,
-    borderColor: '#5a7a7a',
+    borderColor: '#1e4080',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 30,
@@ -670,7 +670,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f0f0',
   },
   retakeButton: {
-    backgroundColor: '#5a7a7a',
+    backgroundColor: '#1e4080',
     borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 50,

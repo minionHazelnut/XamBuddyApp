@@ -4,9 +4,9 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   ScrollView,
 } from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {FONTS, TEXT_COLORS} from '../lib/fonts';
 
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   startButton: {
-    backgroundColor: '#5a7a7a',
+    backgroundColor: '#1e4080',
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 60,

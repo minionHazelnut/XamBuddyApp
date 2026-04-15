@@ -211,11 +211,7 @@ const ProgressScreen = ({navigation}) => {
     : streakAlive
     ? 'Practice once today to keep your streak alive.'
     : 'Practice now to start building your streak.';
-  const actionButtonColor = practicedToday
-    ? '#16a34a'
-    : streakAlive
-    ? '#d97706'
-    : '#4c8cff';
+  const actionButtonColor = '#1e4080';
 
   return (
     <SafeAreaView style={styles.container}>

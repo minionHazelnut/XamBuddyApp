@@ -5,14 +5,14 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
   ActivityIndicator,
 } from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {supabase} from '../lib/supabase';
 import {FONTS, TEXT_COLORS} from '../lib/fonts';
 
-const FILTERS = ['All', 'Resume', 'Finished', 'Saved', 'Free'];
+const FILTERS = ['All', 'Resume', 'Finished', 'Saved'];
 
 const ProgressCircle = ({progress}) => {
   if (progress === 100) {
@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 20,
     paddingVertical: 12,
-    gap: 24,
+    justifyContent: 'space-between',
   },
   filterText: {
     fontSize: 16,
