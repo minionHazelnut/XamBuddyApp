@@ -1,4 +1,4 @@
-import React, {useRef, useState} from 'react';
+import React, {useRef, useState, useCallback} from 'react';
 import {
   View,
   Text,
@@ -14,10 +14,13 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import {useFocusEffect} from '@react-navigation/native';
 import {supabase} from '../lib/supabase';
 import {FONTS, TEXT_COLORS} from '../lib/fonts';
+import {markStreakDay, loadStreakDays, computeStreak} from '../lib/streak';
 
 const WINDOW = Dimensions.get('window');
+const SIDEBAR_WIDTH = WINDOW.width * 0.72;
 const QOTD_STORAGE_KEY = 'qotdState';
 
 const getLocalDateKey = () => {
@@ -28,8 +31,16 @@ const getLocalDateKey = () => {
 };
 
 const HomeScreen = ({navigation, onSignOut}) => {
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [streak, setStreak] = useState(0);
+
+  useFocusEffect(useCallback(() => {
+    loadStreakDays().then(days => setStreak(computeStreak(days)));
+  }, []));
+
+  const [menuMounted, setMenuMounted] = useState(false);
   const [logoutConfirmVisible, setLogoutConfirmVisible] = useState(false);
+  const sidebarX = useRef(new Animated.Value(-SIDEBAR_WIDTH)).current;
+  const sidebarOverlay = useRef(new Animated.Value(0)).current;
   const [qotdOpen, setQotdOpen] = useState(false);
   const [qotdQuestion, setQotdQuestion] = useState(null);
   const [qotdLoading, setQotdLoading] = useState(false);
@@ -46,9 +57,28 @@ const HomeScreen = ({navigation, onSignOut}) => {
   const overlayRadius = useRef(new Animated.Value(24)).current;
   const overlayDimmed = useRef(new Animated.Value(0)).current;
 
+  const openMenu = () => {
+    setMenuMounted(true);
+    sidebarX.setValue(-SIDEBAR_WIDTH);
+    sidebarOverlay.setValue(0);
+    Animated.parallel([
+      Animated.timing(sidebarX, {toValue: 0, duration: 280, useNativeDriver: true}),
+      Animated.timing(sidebarOverlay, {toValue: 1, duration: 280, useNativeDriver: true}),
+    ]).start();
+  };
+
+  const closeMenu = (callback) => {
+    Animated.parallel([
+      Animated.timing(sidebarX, {toValue: -SIDEBAR_WIDTH, duration: 240, useNativeDriver: true}),
+      Animated.timing(sidebarOverlay, {toValue: 0, duration: 240, useNativeDriver: true}),
+    ]).start(() => {
+      setMenuMounted(false);
+      callback?.();
+    });
+  };
+
   const handleLogoutPress = () => {
-    setMenuOpen(false);
-    setLogoutConfirmVisible(true);
+    closeMenu(() => setLogoutConfirmVisible(true));
   };
 
   const confirmLogout = () => {
@@ -278,6 +308,9 @@ const HomeScreen = ({navigation, onSignOut}) => {
       answer: optionKey,
       feedback,
     });
+
+    await markStreakDay();
+    loadStreakDays().then(days => setStreak(computeStreak(days)));
   };
 
   const renderQOTDOptions = () => {
@@ -323,26 +356,32 @@ const HomeScreen = ({navigation, onSignOut}) => {
 
   return (
     <View style={styles.container}>
-      {menuOpen && (
+      {menuMounted && (
         <View style={styles.sidebarContainer}>
-          <TouchableWithoutFeedback onPress={() => setMenuOpen(false)}>
-            <View style={styles.overlay} />
+          <TouchableWithoutFeedback onPress={() => closeMenu()}>
+            <Animated.View style={[styles.overlay, {opacity: sidebarOverlay}]} />
           </TouchableWithoutFeedback>
-          <View style={styles.sidebar}>
-            <Text style={styles.sidebarTitle}>Menu</Text>
-            <TouchableOpacity style={styles.sidebarItem} onPress={() => setMenuOpen(false)}>
+          <Animated.View
+            style={[styles.sidebar, {transform: [{translateX: sidebarX}]}]}>
+            <View style={styles.sidebarHeader}>
+              <Text style={styles.sidebarTitle}>Menu</Text>
+              <TouchableOpacity onPress={() => closeMenu()} style={styles.sidebarCloseBtn}>
+                <Icon name="close" size={22} color="#1e4080" />
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity style={styles.sidebarItem} onPress={() => closeMenu(() => navigation.navigate('Profile'))}>
               <Text style={styles.sidebarText}>Profile settings</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.sidebarItem} onPress={() => setMenuOpen(false)}>
+            <TouchableOpacity style={styles.sidebarItem} onPress={() => closeMenu(() => navigation.navigate('Plans'))}>
               <Text style={styles.sidebarText}>Premium plans</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.sidebarItem} onPress={() => setMenuOpen(false)}>
+            <TouchableOpacity style={styles.sidebarItem} onPress={() => closeMenu(() => navigation.navigate('Suggestions'))}>
               <Text style={styles.sidebarText}>Suggestions</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.sidebarItem} onPress={handleLogoutPress}>
               <Text style={styles.sidebarTextLogout}>Log out</Text>
             </TouchableOpacity>
-          </View>
+          </Animated.View>
         </View>
       )}
 
@@ -375,7 +414,7 @@ const HomeScreen = ({navigation, onSignOut}) => {
           colors={['#1e4080', '#1e4080']}
           style={styles.topSection}>
           <View style={styles.headerRow}>
-            <TouchableOpacity onPress={() => setMenuOpen(true)} style={styles.hamburgerButton}>
+            <TouchableOpacity onPress={openMenu} style={styles.hamburgerButton}>
               <Icon name="menu" size={26} color="#ffffff" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>XamBuddy</Text>
@@ -432,7 +471,7 @@ const HomeScreen = ({navigation, onSignOut}) => {
 
             <View style={styles.streakCard}>
               <Text style={styles.streakLabel}>Streak</Text>
-              <Text style={styles.streakNumber}>12</Text>
+              <Text style={styles.streakNumber}>{streak}</Text>
             </View>
           </View>
 
@@ -706,7 +745,7 @@ const styles = StyleSheet.create({
   },
   sidebar: {
     width: '72%',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#EBF4FF',
     paddingTop: 60,
     paddingHorizontal: 20,
     shadowColor: '#000',
@@ -715,21 +754,34 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 10,
   },
+  sidebarHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
   sidebarTitle: {
     fontSize: 24,
     fontFamily: FONTS.heading,
-    color: '#111827',
-    marginBottom: 24,
+    color: '#1e4080',
+  },
+  sidebarCloseBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: 'rgba(30,64,128,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   sidebarItem: {
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: '#c7d9f0',
   },
   sidebarText: {
     fontSize: 16,
     fontFamily: FONTS.body,
-    color: '#111827',
+    color: '#1e4080',
   },
   sidebarTextLogout: {
     fontSize: 16,

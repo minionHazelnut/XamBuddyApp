@@ -10,11 +10,11 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {FONTS, TEXT_COLORS} from '../lib/fonts';
 
-const DIFFICULTIES = ['All', 'Easy', 'Medium', 'Hard'];
+const DIFFICULTIES = ['Mixed', 'Easy', 'Medium', 'Hard'];
 
 const ChapterDetailScreen = ({navigation, route}) => {
   const {subject, chapter, questionCount} = route.params;
-  const [difficulty, setDifficulty] = useState('All');
+  const [difficulty, setDifficulty] = useState('Mixed');
   const [diffDropdownOpen, setDiffDropdownOpen] = useState(false);
   const [numQuestions, setNumQuestions] = useState(
     Math.min(30, questionCount),

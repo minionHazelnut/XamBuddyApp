@@ -1,4 +1,5 @@
-import React, {useRef, useState} from 'react';
+import React, {useRef, useState, useEffect} from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {NavigationContainer} from '@react-navigation/native';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
@@ -19,6 +20,8 @@ import {supabase} from './lib/supabase';
 
 import HomeScreen from './Screens/HomeScreen';
 import ProgressScreen from './Screens/ProgressScreen';
+import PlansScreen from './Screens/PlansScreen';
+import SuggestionsScreen from './Screens/SuggestionsScreen';
 import QBankScreen from './Screens/QBankScreen';
 import PracticeScreen from './Screens/PracticeScreen';
 import RioScreen from './Screens/RioScreen';
@@ -33,6 +36,8 @@ const HomeStackScreen = ({onSignOut}) => (
       {props => <HomeScreen {...props} onSignOut={onSignOut} />}
     </HomeStack.Screen>
     <HomeStack.Screen name="Progress" component={ProgressScreen} />
+    <HomeStack.Screen name="Plans" component={PlansScreen} />
+    <HomeStack.Screen name="Suggestions" component={SuggestionsScreen} />
   </HomeStack.Navigator>
 );
 
@@ -208,8 +213,9 @@ const tabStyles = StyleSheet.create({
   },
 });
 
-function AuthScreen({onSignIn, localAuth, setLocalAuth}) {
+function AuthScreen({onSignIn, localAuth, setLocalAuth, storedProfile}) {
   const [mode, setMode] = useState('signin');
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -228,6 +234,10 @@ function AuthScreen({onSignIn, localAuth, setLocalAuth}) {
     }
 
     if (mode === 'signup') {
+      if (!name.trim()) {
+        setMessage('Please enter your name.');
+        return;
+      }
       if (!confirmPassword.trim()) {
         setMessage('Please confirm your password.');
         return;
@@ -258,8 +268,9 @@ function AuthScreen({onSignIn, localAuth, setLocalAuth}) {
             setSupabaseUser(signedInUser);
             onSignIn({
               email: email.trim().toLowerCase(),
-              board: localAuth.board ?? selectedBoard,
-              studentClass: localAuth.studentClass ?? selectedClass,
+              name: signedInUser?.user_metadata?.name ?? localAuth.name ?? storedProfile?.name ?? '',
+              board: localAuth.board ?? storedProfile?.board ?? selectedBoard,
+              studentClass: localAuth.studentClass ?? storedProfile?.studentClass ?? selectedClass,
               user: signedInUser,
             });
             return;
@@ -273,8 +284,9 @@ function AuthScreen({onSignIn, localAuth, setLocalAuth}) {
         setSupabaseUser(signedInUser);
         onSignIn({
           email: email.trim().toLowerCase(),
-          board: selectedBoard,
-          studentClass: selectedClass,
+          name: signedInUser?.user_metadata?.name ?? localAuth?.name ?? storedProfile?.name ?? '',
+          board: localAuth?.board ?? storedProfile?.board ?? selectedBoard,
+          studentClass: localAuth?.studentClass ?? storedProfile?.studentClass ?? selectedClass,
           user: signedInUser,
         });
         return;
@@ -283,6 +295,7 @@ function AuthScreen({onSignIn, localAuth, setLocalAuth}) {
       result = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password: password.trim(),
+        options: {data: {name: name.trim()}},
       });
 
       if (result.error) {
@@ -296,6 +309,7 @@ function AuthScreen({onSignIn, localAuth, setLocalAuth}) {
       setLocalAuth({
         email: email.trim().toLowerCase(),
         password: password.trim(),
+        name: name.trim(),
         user: authUser,
         board: selectedBoard,
         studentClass: selectedClass,
@@ -315,6 +329,7 @@ function AuthScreen({onSignIn, localAuth, setLocalAuth}) {
     const nextMode = mode === 'signin' ? 'signup' : 'signin';
     setMode(nextMode);
     setStage('enterCredentials');
+    setName('');
     setEmail('');
     setPassword('');
     setConfirmPassword('');
@@ -333,6 +348,7 @@ function AuthScreen({onSignIn, localAuth, setLocalAuth}) {
     }
     onSignIn({
       email: email.trim().toLowerCase(),
+      name: name.trim(),
       board: selectedBoard,
       studentClass: selectedClass,
       user: supabaseUser,
@@ -352,7 +368,23 @@ function AuthScreen({onSignIn, localAuth, setLocalAuth}) {
 
       {stage === 'enterCredentials' && (
         <View style={authStyles.block}>
-          <Text style={authStyles.label}>Email</Text>
+          {mode === 'signup' && (
+            <>
+              <Text style={authStyles.label}>Your name</Text>
+              <TextInput
+                style={authStyles.input}
+                placeholder="Enter your name"
+                value={name}
+                onChangeText={setName}
+                placeholderTextColor="#9ca3af"
+                autoCapitalize="words"
+              />
+              <Text style={[authStyles.label, {marginTop: 16}]}>Email</Text>
+            </>
+          )}
+          {mode === 'signin' && (
+            <Text style={authStyles.label}>Email</Text>
+          )}
           <TextInput
             style={authStyles.input}
             keyboardType="email-address"
@@ -478,7 +510,7 @@ const authStyles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     padding: 24,
-    backgroundColor: '#6b7c7c',
+    backgroundColor: '#1e4080',
   },
   title: {
     fontSize: 30,
@@ -605,9 +637,75 @@ const authStyles = StyleSheet.create({
   },
 });
 
+const PROFILE_KEY = 'xambuddyProfile';
+
 export default function App() {
   const [user, setUser] = useState(null);
   const [localAuth, setLocalAuth] = useState(null);
+  const [storedProfile, setStoredProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const init = async () => {
+      // Load stored profile (board, class, name)
+      let profile = null;
+      try {
+        const v = await AsyncStorage.getItem(PROFILE_KEY);
+        if (v) {
+          profile = JSON.parse(v);
+          if (mounted) setStoredProfile(profile);
+        }
+      } catch (e) {}
+
+      // Restore Supabase session if one exists
+      try {
+        const {data: {session}} = await supabase.auth.getSession();
+        if (session?.user && mounted) {
+          setUser({
+            email: session.user.email,
+            name: session.user.user_metadata?.name || profile?.name || '',
+            board: profile?.board || '',
+            studentClass: profile?.studentClass || '',
+            user: session.user,
+          });
+        }
+      } catch (e) {}
+
+      if (mounted) setLoading(false);
+    };
+
+    init();
+
+    // Handle token refresh and remote sign-out
+    const {data: {subscription}} = supabase.auth.onAuthStateChange(
+      (event, _session) => {
+        if (event === 'SIGNED_OUT') {
+          setUser(null);
+        }
+      },
+    );
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleSignIn = async userData => {
+    const profile = {
+      name: userData.name || '',
+      board: userData.board || '',
+      studentClass: userData.studentClass || '',
+      email: userData.email || '',
+    };
+    try {
+      await AsyncStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+      setStoredProfile(profile);
+    } catch (e) {}
+    setUser(userData);
+  };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -617,13 +715,13 @@ export default function App() {
   return (
     <NavigationContainer>
       <View style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#6b7c7c" />
-        {user ? (
+        <StatusBar barStyle="light-content" backgroundColor="#1e4080" />
+        {loading ? null : user ? (
           <Tab.Navigator
             tabBar={props => <CustomTabBar {...props} />}
             screenOptions={{
               headerStyle: {
-                backgroundColor: '#6b7c7c',
+                backgroundColor: '#1e4080',
                 elevation: 0,
                 shadowOpacity: 0,
               },
@@ -669,7 +767,7 @@ export default function App() {
             </Tab.Screen>
           </Tab.Navigator>
         ) : (
-          <AuthScreen onSignIn={setUser} localAuth={localAuth} setLocalAuth={setLocalAuth} />
+          <AuthScreen onSignIn={handleSignIn} localAuth={localAuth} setLocalAuth={setLocalAuth} storedProfile={storedProfile} />
         )}
       </View>
     </NavigationContainer>
@@ -679,6 +777,6 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#6b7c7c',
+    backgroundColor: '#1e4080',
   },
 });

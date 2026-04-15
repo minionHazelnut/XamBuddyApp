@@ -11,6 +11,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {supabase} from '../lib/supabase';
 import {FONTS, TEXT_COLORS} from '../lib/fonts';
+import {markStreakDay} from '../lib/streak';
 
 let AsyncStorage;
 try {
@@ -40,24 +41,60 @@ const safeSetItem = async (key, value) => {
 };
 
 const OPTION_LABELS = ['A', 'B', 'C', 'D'];
+const IN_PROGRESS_KEY = 'quizInProgress';
+const SESSIONS_KEY = 'quizSessions';
+const BOOKMARKS_KEY = 'quizBookmarks';
+
+const inProgressId = (subject, chapter, difficulty) =>
+  `${subject}||${chapter}||${difficulty}`;
 
 const QuizScreen = ({navigation, route}) => {
-  const {subject, chapter, difficulty, numQuestions} = route.params;
+  const {subject, chapter, difficulty, numQuestions, resumeData} = route.params;
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [answers, setAnswers] = useState({});
   const [showExplanation, setShowExplanation] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [bookmarked, setBookmarked] = useState(false);
+  const [bookmarkedIds, setBookmarkedIds] = useState(new Set());
   const [quizFinished, setQuizFinished] = useState(false);
   const [startTime, setStartTime] = useState(Date.now());
 
   const chapterDisplay = chapter.replace(/^\d+\.\s*/, '');
 
+  // Load bookmarks on mount; restore in-progress if resumeData provided
   useEffect(() => {
-    fetchQuestions();
+    const init = async () => {
+      // Load persisted bookmarks
+      const bStr = await safeGetItem(BOOKMARKS_KEY);
+      if (bStr) {
+        const bList = JSON.parse(bStr);
+        setBookmarkedIds(new Set(bList.map(b => String(b.questionId))));
+      }
+
+      if (resumeData) {
+        setQuestions(resumeData.questions);
+        setCurrentIndex(resumeData.currentIndex);
+        setAnswers(resumeData.answers);
+        setSelectedAnswer(resumeData.answers[resumeData.currentIndex] || null);
+        setStartTime(resumeData.startTime);
+        setLoading(false);
+      } else {
+        fetchQuestions();
+      }
+    };
+    init();
   }, []);
+
+  // Save in-progress state on back-navigate (if not finished)
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', () => {
+      if (!quizFinished) {
+        saveInProgress(answers, currentIndex, questions);
+      }
+    });
+    return unsubscribe;
+  }, [navigation, quizFinished, answers, currentIndex, questions]);
 
   const fetchQuestions = async () => {
     setLoading(true);
@@ -69,7 +106,7 @@ const QuizScreen = ({navigation, route}) => {
       .eq('chapter', chapter)
       .eq('question_type', 'mcq');
 
-    if (difficulty !== 'all') {
+    if (difficulty !== 'all' && difficulty !== 'mixed') {
       query = query.eq('difficulty', difficulty);
     }
 
@@ -97,7 +134,6 @@ const QuizScreen = ({navigation, route}) => {
       setCurrentIndex(currentIndex + 1);
       setSelectedAnswer(answers[currentIndex + 1] || null);
       setShowExplanation(false);
-      setBookmarked(false);
     } else {
       await saveQuizResult();
       setQuizFinished(true);
@@ -109,7 +145,6 @@ const QuizScreen = ({navigation, route}) => {
       setCurrentIndex(currentIndex - 1);
       setSelectedAnswer(answers[currentIndex - 1] || null);
       setShowExplanation(false);
-      setBookmarked(false);
     }
   };
 
@@ -128,7 +163,7 @@ const QuizScreen = ({navigation, route}) => {
   const saveQuizResult = async () => {
     const {correct, attempted, total} = getScore();
     const now = new Date();
-    const date = now.toISOString().split('T')[0];
+    const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const timeMins = Math.max(1, Math.round((Date.now() - startTime) / 60000));
     const accuracy = attempted > 0 ? Math.round((correct / attempted) * 100) : 0;
     const entry = {
@@ -185,12 +220,78 @@ const QuizScreen = ({navigation, route}) => {
       }
 
       await safeSetItem('quizProgressHistory', JSON.stringify(history));
+
+      // Increment total tests taken counter
+      const countStr = await safeGetItem('quizTestsCount');
+      const count = countStr ? parseInt(countStr, 10) : 0;
+      await safeSetItem('quizTestsCount', String(count + 1));
+
+      await markStreakDay();
+
+      // Save individual session for MCQ history
+      const session = {
+        id: now.toISOString(),
+        subject, chapter, difficulty,
+        correct, wrong: attempted - correct, attempted, total, accuracy, timeMins,
+        completedAt: now.toISOString(),
+      };
+      const sessStr = await safeGetItem(SESSIONS_KEY);
+      const sessions = sessStr ? JSON.parse(sessStr) : [];
+      sessions.push(session);
+      await safeSetItem(SESSIONS_KEY, JSON.stringify(sessions));
+
+      // Remove from in-progress
+      await removeInProgress();
     } catch (error) {
       console.warn('Error saving quiz progress:', error?.message || error);
     }
   };
 
+  const saveInProgress = async (currentAnswers, idx, qs) => {
+    if (!AsyncStorage || !qs.length || Object.keys(currentAnswers).length === 0) return;
+    try {
+      const id = inProgressId(subject, chapter, difficulty);
+      const entry = {id, subject, chapter, difficulty, numQuestions, currentIndex: idx, answers: currentAnswers, questions: qs, startTime, savedAt: new Date().toISOString()};
+      const stored = await safeGetItem(IN_PROGRESS_KEY);
+      const list = stored ? JSON.parse(stored) : [];
+      const i = list.findIndex(e => e.id === id);
+      if (i >= 0) list[i] = entry; else list.push(entry);
+      await safeSetItem(IN_PROGRESS_KEY, JSON.stringify(list));
+    } catch (e) {}
+  };
+
+  const removeInProgress = async () => {
+    if (!AsyncStorage) return;
+    try {
+      const id = inProgressId(subject, chapter, difficulty);
+      const stored = await safeGetItem(IN_PROGRESS_KEY);
+      const list = stored ? JSON.parse(stored) : [];
+      await safeSetItem(IN_PROGRESS_KEY, JSON.stringify(list.filter(e => e.id !== id)));
+    } catch (e) {}
+  };
+
+  const toggleBookmark = async () => {
+    const q = questions[currentIndex];
+    if (!q) return;
+    const qid = String(q.id);
+    const newSet = new Set(bookmarkedIds);
+    try {
+      const stored = await safeGetItem(BOOKMARKS_KEY);
+      const list = stored ? JSON.parse(stored) : [];
+      if (newSet.has(qid)) {
+        newSet.delete(qid);
+        await safeSetItem(BOOKMARKS_KEY, JSON.stringify(list.filter(b => String(b.questionId) !== qid)));
+      } else {
+        newSet.add(qid);
+        list.push({questionId: qid, questionText: q.question_text, options: q.options, correct_answer: q.correct_answer, explanation: q.explanation, subject, chapter, savedAt: new Date().toISOString()});
+        await safeSetItem(BOOKMARKS_KEY, JSON.stringify(list));
+      }
+      setBookmarkedIds(newSet);
+    } catch (e) {}
+  };
+
   const retakeQuiz = () => {
+    removeInProgress();
     setCurrentIndex(0);
     setSelectedAnswer(null);
     setAnswers({});
@@ -366,9 +467,9 @@ const QuizScreen = ({navigation, route}) => {
               {currentIndex + 1}/{questions.length}
             </Text>
           </View>
-          <TouchableOpacity onPress={() => setBookmarked(!bookmarked)}>
+          <TouchableOpacity onPress={toggleBookmark}>
             <Icon
-              name={bookmarked ? 'bookmark' : 'bookmark-border'}
+              name={bookmarkedIds.has(String(currentQuestion?.id)) ? 'bookmark' : 'bookmark-border'}
               size={28}
               color="#8a9a9a"
             />

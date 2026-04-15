@@ -32,7 +32,8 @@ const parseDateKey = dateStr => {
   return date;
 };
 
-const getDateKey = date => date.toISOString().split('T')[0];
+const getDateKey = date =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
 const getDayDifference = (earlier, later) =>
   Math.round((later - earlier) / (1000 * 60 * 60 * 24));
@@ -311,6 +312,13 @@ const ProgressScreen = ({navigation}) => {
             </Text>
           </View>
         </View>
+
+        <TouchableOpacity
+          style={styles.viewAnalysisButton}
+          activeOpacity={0.85}
+          onPress={() => navigation.navigate('Profile')}>
+          <Text style={styles.viewAnalysisText}>View Full Analysis</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -487,6 +495,22 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.headingBold,
     color: TEXT_COLORS.title,
     textAlign: 'right',
+  },
+  viewAnalysisButton: {
+    backgroundColor: 'transparent',
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#1e4080',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  viewAnalysisText: {
+    fontSize: 14,
+    fontFamily: FONTS.headingBold,
+    color: '#1e4080',
+    textAlign: 'center',
   },
 });
 
