@@ -22,15 +22,16 @@ Last updated: April 2026
 | MCQ session history | ✅ Done — Finished tab on MCQScreen shows past results with accuracy badges |
 | ProfileScreen — real stats | ✅ Done — avg accuracy, total Qs, tests taken from AsyncStorage |
 | ProfileScreen — weak areas | ✅ Done — computed from chapters with accuracy < 60% |
-| ProfileScreen — subject coverage | 🔶 Hardcoded — SUBJECTS array in ProfileScreen.js is static (Physics/Maths/Chemistry/English with fixed %); not computed from quiz history |
+| ProfileScreen — subject coverage | ✅ Done — computed from `quizProgressHistory` grouped by subject; bar colour by accuracy; empty state for new users |
 | Rio AI chat | 🔶 UI done — chat bubbles, send button; responses are placeholder ("I'm still learning!") |
 | Premium Plans screen | ✅ Done — PlansScreen with Free + Premium feature comparison cards |
 | Suggestions / feedback | ✅ Done — SuggestionsScreen saves to Supabase `suggestions` table |
-| Referral card on HomeScreen | ✅ Done — 1 week free (download) / 1 month free (subscribe) copy |
-| Referral backend | ❌ Not done — UI only; no referral code generation, tracking, or credit system |
+| Referral card on HomeScreen | ✅ Done — shows unique user code + Share button; live "X friends joined" count |
+| Referral backend | 🔶 Partial — code generation + signup event tracking done; subscribe event and premium-day credit pending paywall |
+| Sidebar menu (all tab screens) | ✅ Done — shared SidebarMenu component on Home, QBank, Practice, Rio, Profile |
 | Premium gating / paywall | ❌ Not done — all features accessible regardless of plan; Plans screen is display-only |
 | Quiz results to Supabase | ❌ Not done — results stored in AsyncStorage only; no cross-device history |
-| User board/class in child screens | ❌ Not done — board/class lives in App.js state; only ProfileScreen receives `user` prop; other screens don't filter by board/class |
+| User board/class in child screens | ❌ Not done — board/class in App.js state; HomeScreen + ProfileScreen receive `user`; MCQScreen/QuizScreen/QBankScreen do not filter by board/class |
 
 ---
 
@@ -51,9 +52,7 @@ Last updated: April 2026
    - After reading the answer, user rates themselves: "Got it" / "Needs review" / "Didn't know".
    - Save self-assessment per question to AsyncStorage; show mastery % per chapter.
 
-4. **Subject coverage — real data**
-   - Compute subject-wise accuracy from `quizProgressHistory` grouped by subject.
-   - Replace the hardcoded `SUBJECTS` array in ProfileScreen with live data.
+4. ~~**Subject coverage — real data**~~ ✅ Done
 
 5. **Rio AI integration**
    - Wire RioScreen's `handleSend` to the Claude API (or Supabase Edge Function proxy).
@@ -62,10 +61,7 @@ Last updated: April 2026
 
 ### Medium priority (polish and growth)
 
-6. **Referral system backend**
-   - Generate a unique referral code per user (stored in Supabase).
-   - Track who downloaded via a referral link / code.
-   - Award premium days on milestone (download = 1 week, subscribe = 1 month).
+6. ~~**Referral system backend**~~ 🔶 Partial — code + signup tracking done; subscribe event + credit pending paywall
 
 7. **Premium gating**
    - Define which features are premium-only (e.g., unlimited MCQs, AI Rio, all long answers).

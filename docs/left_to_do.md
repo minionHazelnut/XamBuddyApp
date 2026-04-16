@@ -29,12 +29,12 @@ Last updated: April 2026
 
 ## Medium Priority
 
-5. **Referral system backend**
-   - Referral card on HomeScreen is display-only.
-   - Generate a unique referral code per user (stored in Supabase).
-   - Track downloads and subscriptions via referral code.
-   - Award premium days: 1 week (friend downloads), 1 month (friend subscribes).
-   - in homescreen they can generate a referral code to share with others
+5. ~~**Referral system backend**~~ ✅ Done
+   - Unique referral code auto-generated per user and stored in Supabase `referral_codes` table.
+   - HomeScreen referral card shows the code with a native Share button.
+   - Signup flow records a `signup` event in `referral_events` when a new user enters a referral code.
+   - Referral count ("X friends joined") shown live on HomeScreen.
+   - Remaining: subscribe event (wire when paywall is built), premium-day credit logic.
 
 6. **Premium gating / paywall**
    - PlansScreen exists but all features are freely accessible regardless of plan.
@@ -48,7 +48,7 @@ Last updated: April 2026
    - Enables cross-device history and server-side analytics.
 
 8. **Board/class context in child screens**
-   - Board and class live in `App.js` state; only ProfileScreen receives the `user` prop.
+   - Board and class live in `App.js` state; HomeScreen and ProfileScreen receive `user` prop.
    - Pass via React Context so MCQScreen, QuizScreen, QBankScreen can filter Supabase queries by board/class.
 
 ---

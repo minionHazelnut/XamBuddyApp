@@ -17,25 +17,26 @@ Platform: iOS and Android
 
 | File | Status | Notes |
 |------|--------|-------|
-| `HomeScreen.js` | ✅ Done | QOTD, dynamic streak, referral card, sidebar menu (Profile settings / Plans / Suggestions / Log out) |
+| `HomeScreen.js` | ✅ Done | QOTD, dynamic streak, referral card (live code + Share + friend count), sidebar menu |
 | `ProgressScreen.js` | ✅ Done | 3-day bar chart, week dot calendar, View Full Analysis button |
-| `ProfileScreen.js` | ✅ Done | Real stats (avg accuracy, Qs answered, tests taken), dynamic streak + week dots, weak areas, subject coverage (hardcoded subjects) |
-| `QBankScreen.js` | ✅ Done | Past year papers + sample papers from Supabase `papers` table |
-| `PracticeScreen.js` | ✅ Done | Nested stack hub; MCQ hero card, short answers card, long answers card |
+| `ProfileScreen.js` | ✅ Done | Real stats, dynamic streak + week dots, weak areas, live subject-coverage bars, sidebar menu |
+| `QBankScreen.js` | ✅ Done | Past year papers + sample papers from Supabase `papers` table, sidebar menu |
+| `PracticeScreen.js` | ✅ Done | Nested stack hub; MCQ hero card, short answers card, long answers card, sidebar menu |
 | `MCQScreen.js` | ✅ Done | Chapter browser (from Supabase), All / Resume / Finished / Saved filter tabs wired to AsyncStorage |
 | `ChapterDetailScreen.js` | ✅ Done | Difficulty selector (Mixed default), question count picker, Start Quiz |
 | `QuizScreen.js` | ✅ Done | MCQ quiz, per-question bookmarks, in-progress save/restore, session history, Mixed difficulty, streak mark on finish |
-| `RioScreen.js` | 🔶 UI done | Chat UI complete; AI responses are placeholder ("I'm still learning!") — real AI not wired |
+| `RioScreen.js` | 🔶 UI done | Chat UI complete; AI responses are placeholder — real AI not wired; sidebar menu |
 | `PlansScreen.js` | ✅ Done | Free vs Premium pricing cards with full feature lists |
 | `SuggestionsScreen.js` | ✅ Done | Category chips, text area, saves to Supabase `suggestions` table, thank-you state |
 
-## Shared libraries
+## Shared libraries / components
 
 | File | Purpose |
 |------|---------|
 | `lib/supabase.js` | Supabase client with AsyncStorage session persistence, AppState-driven token refresh |
 | `lib/fonts.js` | Font name constants (`FONTS.*`, `TEXT_COLORS.*`) |
 | `lib/streak.js` | `getLocalDateKey`, `markStreakDay`, `loadStreakDays`, `computeStreak` — shared across HomeScreen, QuizScreen, ProfileScreen |
+| `Screens/SidebarMenu.js` | Reusable Modal-based animated sidebar; props: `navigation`, `iconColor`, `buttonStyle`; handles sign-out via `supabase.auth.signOut()` |
 
 ## AsyncStorage keys
 
@@ -57,6 +58,8 @@ Platform: iOS and Android
 | `questions` | QOTD (HomeScreen), MCQScreen chapter/subject fetch, QuizScreen question fetch |
 | `papers` | QBankScreen |
 | `suggestions` | SuggestionsScreen |
+| `referral_codes` | HomeScreen (fetch/generate code), App.js signup (validate code) |
+| `referral_events` | App.js signup (insert event), HomeScreen (count friends joined) |
 | `auth` | Sign in / sign up / session |
 
 ## Dependencies (key)
