@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Animated,
   Dimensions,
+  Share,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LinearGradient from 'react-native-linear-gradient';
@@ -30,12 +31,56 @@ const getLocalDateKey = () => {
   return `${now.getFullYear()}-${month}-${day}`;
 };
 
-const HomeScreen = ({navigation, onSignOut}) => {
+const HomeScreen = ({navigation, onSignOut, user}) => {
   const [streak, setStreak] = useState(0);
+  const [referralCode, setReferralCode] = useState(null);
+  const [referralCount, setReferralCount] = useState(0);
+  const [referralLoading, setReferralLoading] = useState(false);
+
+  const loadReferral = useCallback(async () => {
+    const userId = user?.user?.id;
+    if (!userId) {return;}
+    setReferralLoading(true);
+    try {
+      // Try to fetch existing code
+      const {data: existing} = await supabase
+        .from('referral_codes')
+        .select('code')
+        .eq('user_id', userId)
+        .single();
+
+      let code = existing?.code;
+      if (!code) {
+        // Generate a new 6-char code and store it
+        code = Math.random().toString(36).substring(2, 8).toUpperCase();
+        await supabase.from('referral_codes').insert({user_id: userId, code});
+      }
+      setReferralCode(code);
+
+      // Count how many friends signed up using this code
+      const {count} = await supabase
+        .from('referral_events')
+        .select('id', {count: 'exact', head: true})
+        .eq('referrer_user_id', userId)
+        .eq('event_type', 'signup');
+      setReferralCount(count ?? 0);
+    } catch (_) {}
+    setReferralLoading(false);
+  }, [user]);
 
   useFocusEffect(useCallback(() => {
     loadStreakDays().then(days => setStreak(computeStreak(days)));
-  }, []));
+    loadReferral();
+  }, [loadReferral]));
+
+  const handleShare = async () => {
+    if (!referralCode) {return;}
+    try {
+      await Share.share({
+        message: `Use my referral code ${referralCode} to sign up on XamBuddy and get 1 week of free premium! 🎉`,
+      });
+    } catch (_) {}
+  };
 
   const [menuMounted, setMenuMounted] = useState(false);
   const [logoutConfirmVisible, setLogoutConfirmVisible] = useState(false);
@@ -475,14 +520,47 @@ const HomeScreen = ({navigation, onSignOut}) => {
             </View>
           </View>
 
-          <TouchableOpacity style={styles.examCard}>
-            <Text style={styles.examCardTitle}>
-              Before Exam{"\n"}Formulas, Theorems &{"\n"}Diagrams
-            </Text>
-            <View style={styles.arrowContainer}>
-              <Icon name="north_east" size={22} color="#4a5568" />
+          <View style={styles.referralCard}>
+            <View style={styles.referralIconRow}>
+              <View style={styles.referralIconBadge}>
+                <Icon name="card-giftcard" size={22} color="#1e4080" />
+              </View>
+              <Text style={styles.referralHeading}>Refer a friend, earn free premium!</Text>
             </View>
-          </TouchableOpacity>
+
+            {referralLoading ? (
+              <ActivityIndicator color="#1e4080" size="small" style={styles.referralSpinner} />
+            ) : referralCode ? (
+              <View style={styles.referralCodeRow}>
+                <View style={styles.referralCodeBox}>
+                  <Text style={styles.referralCodeText}>{referralCode}</Text>
+                </View>
+                <TouchableOpacity style={styles.referralShareBtn} onPress={handleShare}>
+                  <Icon name="share" size={16} color="#ffffff" />
+                  <Text style={styles.referralShareText}>Share</Text>
+                </TouchableOpacity>
+              </View>
+            ) : null}
+
+            {referralCount > 0 && (
+              <Text style={styles.referralCountText}>
+                {referralCount} friend{referralCount === 1 ? '' : 's'} joined using your code
+              </Text>
+            )}
+
+            <View style={styles.referralRow}>
+              <Icon name="person-add" size={18} color="#1e4080" />
+              <Text style={styles.referralItem}>
+                Friend downloads the app → <Text style={styles.referralHighlight}>1 week free premium</Text>
+              </Text>
+            </View>
+            <View style={styles.referralRow}>
+              <Icon name="star" size={18} color="#1e4080" />
+              <Text style={styles.referralItem}>
+                Friend subscribes to premium → <Text style={styles.referralHighlight}>1 month free premium</Text>
+              </Text>
+            </View>
+          </View>
         </LinearGradient>
       </ScrollView>
 
@@ -520,7 +598,7 @@ const HomeScreen = ({navigation, onSignOut}) => {
             <ScrollView contentContainerStyle={styles.qotdContent} showsVerticalScrollIndicator={false}>
               {qotdLoading ? (
                 <View style={styles.qotdLoading}>
-                  <ActivityIndicator size="large" color="#4a6a6a" />
+                  <ActivityIndicator size="large" color="#1e4080" />
                   <Text style={styles.qotdLoadingText}>Loading question...</Text>
                 </View>
               ) : qotdError ? (
@@ -838,26 +916,98 @@ const styles = StyleSheet.create({
   confirmButtonTextPrimary: {
     color: '#ffffff',
   },
-  examCard: {
+  referralCard: {
     backgroundColor: '#ffffff',
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
   },
-  examCardTitle: {
+  referralIconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+    gap: 10,
+  },
+  referralIconBadge: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#EBF4FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  referralHeading: {
     flex: 1,
-    fontSize: 16,
-    fontFamily: FONTS.body,
+    fontSize: 15,
+    fontFamily: FONTS.bodyBold,
     color: TEXT_COLORS.title,
-    lineHeight: 22,
+    lineHeight: 20,
+  },
+  referralRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginBottom: 10,
+  },
+  referralItem: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: FONTS.body,
+    color: '#4a5568',
+    lineHeight: 20,
+  },
+  referralHighlight: {
+    fontFamily: FONTS.bodyBold,
+    color: '#1e4080',
+  },
+  referralSpinner: {
+    marginVertical: 12,
+    alignSelf: 'flex-start',
+  },
+  referralCodeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+    gap: 10,
+  },
+  referralCodeBox: {
+    flex: 1,
+    backgroundColor: '#dde8ff',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    alignItems: 'center',
+  },
+  referralCodeText: {
+    fontSize: 20,
+    fontFamily: FONTS.headingBold,
+    color: '#1e4080',
+    letterSpacing: 3,
+  },
+  referralShareBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#1e4080',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  referralShareText: {
+    fontSize: 14,
+    fontFamily: FONTS.bodyBold,
+    color: '#ffffff',
+  },
+  referralCountText: {
+    fontSize: 13,
+    fontFamily: FONTS.body,
+    color: '#22c55e',
+    marginBottom: 10,
   },
   arrowContainer: {
     marginLeft: 12,

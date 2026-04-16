@@ -13,6 +13,7 @@ import {
   Text,
   TextInput,
   ScrollView,
+  AppState,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {FONTS} from './lib/fonts';
@@ -30,10 +31,10 @@ import ProfileScreen from './Screens/ProfileScreen';
 const Tab = createBottomTabNavigator();
 const HomeStack = createNativeStackNavigator();
 
-const HomeStackScreen = ({onSignOut}) => (
+const HomeStackScreen = ({onSignOut, user}) => (
   <HomeStack.Navigator screenOptions={{headerShown: false}}>
     <HomeStack.Screen name="HomeMain">
-      {props => <HomeScreen {...props} onSignOut={onSignOut} />}
+      {props => <HomeScreen {...props} onSignOut={onSignOut} user={user} />}
     </HomeStack.Screen>
     <HomeStack.Screen name="Progress" component={ProgressScreen} />
     <HomeStack.Screen name="Plans" component={PlansScreen} />
@@ -45,7 +46,7 @@ const TAB_ICONS = {
   Home: 'home',
   QBank: 'book',
   Practice: 'assignment',
-  Rio: 'auto_awesome',
+  Rio: 'psychology',
   Profile: 'person',
 };
 
@@ -170,7 +171,7 @@ const CustomTabBar = ({state, descriptors, navigation}) => {
 };
 
 const BOARD_OPTIONS = ['cbse', 'karnataka pu', 'other'];
-const CLASS_OPTIONS = ['10th', '12th', 'other'];
+const CLASS_OPTIONS = ['6th', '7th', '8th', '9th', '10th', '11th', '12th', 'Other'];
 
 const tabStyles = StyleSheet.create({
   container: {
@@ -226,6 +227,7 @@ function AuthScreen({onSignIn, localAuth, setLocalAuth, storedProfile}) {
   const [gradeOpen, setGradeOpen] = useState(false);
   const [message, setMessage] = useState('Enter your email and password to continue.');
   const [supabaseUser, setSupabaseUser] = useState(null);
+  const [referralInput, setReferralInput] = useState('');
 
   const authAction = async () => {
     if (!email.trim() || !password.trim()) {
@@ -341,10 +343,27 @@ function AuthScreen({onSignIn, localAuth, setLocalAuth, storedProfile}) {
     setMessage(nextMode === 'signin' ? 'Enter your email and password to sign in.' : 'Enter your email and password to sign up.');
   };
 
-  const finish = () => {
+  const finish = async () => {
     if (!selectedBoard || !selectedClass) {
       setMessage('Please select a board and a class.');
       return;
+    }
+    const code = referralInput.trim().toUpperCase();
+    if (code && supabaseUser?.id) {
+      try {
+        const {data: refRow} = await supabase
+          .from('referral_codes')
+          .select('user_id')
+          .eq('code', code)
+          .single();
+        if (refRow?.user_id && refRow.user_id !== supabaseUser.id) {
+          await supabase.from('referral_events').insert({
+            referrer_user_id: refRow.user_id,
+            referee_user_id: supabaseUser.id,
+            event_type: 'signup',
+          });
+        }
+      } catch (_) {}
     }
     onSignIn({
       email: email.trim().toLowerCase(),
@@ -494,6 +513,18 @@ function AuthScreen({onSignIn, localAuth, setLocalAuth, storedProfile}) {
               ))}
             </View>
           )}
+          <Text style={[authStyles.label, {marginTop: 20}]}>
+            Referral code <Text style={authStyles.labelOptional}>(optional)</Text>
+          </Text>
+          <TextInput
+            style={authStyles.input}
+            placeholder="e.g. XY3K9P"
+            value={referralInput}
+            onChangeText={t => setReferralInput(t.toUpperCase())}
+            placeholderTextColor="#9ca3af"
+            autoCapitalize="characters"
+            maxLength={8}
+          />
           <TouchableOpacity style={authStyles.button} onPress={finish}>
             <Text style={authStyles.buttonText}>Continue to Home</Text>
           </TouchableOpacity>
@@ -534,6 +565,11 @@ const authStyles = StyleSheet.create({
     fontSize: 14,
     color: '#334155',
     marginBottom: 10,
+    fontFamily: FONTS.body,
+  },
+  labelOptional: {
+    fontSize: 13,
+    color: '#94a3b8',
     fontFamily: FONTS.body,
   },
   input: {
@@ -648,6 +684,16 @@ export default function App() {
   useEffect(() => {
     let mounted = true;
 
+    // React Native does not auto-refresh tokens in the background.
+    // Manually start/stop refresh when the app comes to the foreground.
+    const appStateSub = AppState.addEventListener('change', state => {
+      if (state === 'active') {
+        supabase.auth.startAutoRefresh();
+      } else {
+        supabase.auth.stopAutoRefresh();
+      }
+    });
+
     const init = async () => {
       // Load stored profile (board, class, name)
       let profile = null;
@@ -680,15 +726,20 @@ export default function App() {
 
     // Handle token refresh and remote sign-out
     const {data: {subscription}} = supabase.auth.onAuthStateChange(
-      (event, _session) => {
+      (event, session) => {
+        if (!mounted) return;
         if (event === 'SIGNED_OUT') {
           setUser(null);
+        } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+          // Keep user object's underlying Supabase user up to date
+          setUser(prev => prev ? {...prev, user: session.user} : null);
         }
       },
     );
 
     return () => {
       mounted = false;
+      appStateSub.remove();
       subscription.unsubscribe();
     };
   }, []);
@@ -739,7 +790,7 @@ export default function App() {
                 tabBarLabel: 'Home',
                 headerShown: false,
               }}>
-              {props => <HomeStackScreen {...props} onSignOut={handleSignOut} />}
+              {props => <HomeStackScreen {...props} onSignOut={handleSignOut} user={user} />}
             </Tab.Screen>
             <Tab.Screen
               name="QBank"

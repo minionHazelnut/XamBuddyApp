@@ -332,7 +332,7 @@ const QuizScreen = ({navigation, route}) => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4a6a6a" />
+          <ActivityIndicator size="large" color="#1e4080" />
           <Text style={styles.loadingText}>Loading questions...</Text>
         </View>
       </SafeAreaView>
@@ -471,7 +471,7 @@ const QuizScreen = ({navigation, route}) => {
             <Icon
               name={bookmarkedIds.has(String(currentQuestion?.id)) ? 'bookmark' : 'bookmark-border'}
               size={28}
-              color="#8a9a9a"
+              color={bookmarkedIds.has(String(currentQuestion?.id)) ? '#1e4080' : '#8a9a9a'}
             />
           </TouchableOpacity>
         </View>
@@ -544,7 +544,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#6a7a7a',
+    color: '#1e4080',
     fontFamily: FONTS.body,
   },
   header: {

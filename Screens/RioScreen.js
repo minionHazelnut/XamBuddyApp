@@ -12,6 +12,7 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {FONTS, TEXT_COLORS} from '../lib/fonts';
+import SidebarMenu from './SidebarMenu';
 
 const WELCOME_MESSAGE = {
   id: 'welcome',
@@ -19,7 +20,7 @@ const WELCOME_MESSAGE = {
   text: "Hi! I'm Rio, your AI study buddy. Ask me anything about your subjects and I'll help you understand.",
 };
 
-const RioScreen = () => {
+const RioScreen = ({navigation}) => {
   const [messages, setMessages] = useState([WELCOME_MESSAGE]);
   const [input, setInput] = useState('');
   const scrollRef = useRef(null);
@@ -52,6 +53,7 @@ const RioScreen = () => {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
+        <SidebarMenu navigation={navigation} iconColor="#1e4080" />
         <View style={styles.avatarWrap}>
           <Icon name="auto_awesome" size={20} color="#ffffff" />
         </View>

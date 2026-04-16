@@ -12,17 +12,12 @@ import {useFocusEffect} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {FONTS} from '../lib/fonts';
 import {loadStreakDays, computeStreak, getLocalDateKey} from '../lib/streak';
+import SidebarMenu from './SidebarMenu';
 
 const DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
-const SUBJECTS = [
-  {name: 'Physics', pct: 68, color: '#1e4080'},
-  {name: 'Maths', pct: 45, color: '#ef4444'},
-  {name: 'Chemistry', pct: 81, color: '#22c55e'},
-  {name: 'English', pct: 92, color: '#3b82f6'},
-];
 
-const ProfileScreen = ({user, onSignOut}) => {
+const ProfileScreen = ({navigation, user, onSignOut}) => {
   const displayName = user?.name || '';
   const initials = displayName
     ? displayName.trim().split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
@@ -68,6 +63,25 @@ const ProfileScreen = ({user, onSignOut}) => {
             (a, b) => subjectWeakCount[b] - subjectWeakCount[a],
           )[0] || null;
 
+        // Subject coverage: group history by subject, compute accuracy per subject
+        const subjectMap = {};
+        history.forEach(entry => {
+          const subj = entry.subject;
+          if (!subj) return;
+          if (!subjectMap[subj]) subjectMap[subj] = {correct: 0, attempted: 0};
+          subjectMap[subj].correct += entry.correct || 0;
+          subjectMap[subj].attempted += entry.attempted || 0;
+        });
+        const subjects = Object.entries(subjectMap)
+          .map(([name, data]) => {
+            const pct = data.attempted > 0
+              ? Math.round((data.correct / data.attempted) * 100)
+              : 0;
+            const color = pct >= 80 ? '#22c55e' : pct >= 50 ? '#f59e0b' : '#ef4444';
+            return {name, pct, color};
+          })
+          .sort((a, b) => b.pct - a.pct);
+
         // Streak
         const streakDays = await loadStreakDays();
         const streakCount = computeStreak(streakDays);
@@ -85,7 +99,7 @@ const ProfileScreen = ({user, onSignOut}) => {
           return streakSet.has(getLocalDateKey(d));
         });
 
-        setStats({avgAccuracy, totalQs: totalAttempted, testsTaken, weakAreasCount, topWeakSubject, streakCount, weekChecked});
+        setStats({avgAccuracy, totalQs: totalAttempted, testsTaken, weakAreasCount, topWeakSubject, streakCount, weekChecked, subjects});
       } catch (e) {}
     };
     loadStats();
@@ -93,6 +107,10 @@ const ProfileScreen = ({user, onSignOut}) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <View style={styles.topNav}>
+        <SidebarMenu navigation={navigation} iconColor="#ffffff" />
+        <Text style={styles.topNavTitle}>Profile</Text>
+      </View>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
 
         {/* Header */}
@@ -192,22 +210,28 @@ const ProfileScreen = ({user, onSignOut}) => {
         {/* Subject Coverage */}
         <View style={styles.sectionBlock}>
           <Text style={styles.sectionLabel}>SUBJECT COVERAGE</Text>
-          {SUBJECTS.map(subject => (
-            <View key={subject.name} style={styles.subjectRow}>
-              <View style={styles.subjectLabelRow}>
-                <Text style={styles.subjectName}>{subject.name}</Text>
-                <Text style={styles.subjectPct}>{subject.pct}%</Text>
+          {!stats || stats.subjects.length === 0 ? (
+            <Text style={styles.subjectEmpty}>
+              Complete quizzes to see your accuracy by subject.
+            </Text>
+          ) : (
+            stats.subjects.map(subject => (
+              <View key={subject.name} style={styles.subjectRow}>
+                <View style={styles.subjectLabelRow}>
+                  <Text style={styles.subjectName}>{subject.name}</Text>
+                  <Text style={[styles.subjectPct, {color: subject.color}]}>{subject.pct}%</Text>
+                </View>
+                <View style={styles.progressBg}>
+                  <View
+                    style={[
+                      styles.progressFill,
+                      {width: `${subject.pct}%`, backgroundColor: subject.color},
+                    ]}
+                  />
+                </View>
               </View>
-              <View style={styles.progressBg}>
-                <View
-                  style={[
-                    styles.progressFill,
-                    {width: `${subject.pct}%`, backgroundColor: subject.color},
-                  ]}
-                />
-              </View>
-            </View>
-          ))}
+            ))
+          )}
         </View>
 
         {/* Performance Deep-Dive (locked) */}
@@ -246,6 +270,21 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#EBF4FF',
   },
+  topNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 4,
+    backgroundColor: '#1e4080',
+  },
+  topNavTitle: {
+    flex: 1,
+    paddingLeft: 8,
+    fontSize: 26,
+    fontFamily: FONTS.heading,
+    color: 'rgba(255,255,255,0.85)',
+  },
   container: {
     flex: 1,
     backgroundColor: '#EBF4FF',
@@ -255,7 +294,7 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#1e4080',
     paddingHorizontal: 24,
-    paddingTop: 32,
+    paddingTop: 8,
     paddingBottom: 28,
     alignItems: 'center',
   },
@@ -446,6 +485,13 @@ const styles = StyleSheet.create({
   },
 
   // Subject coverage
+  subjectEmpty: {
+    fontSize: 13,
+    fontFamily: FONTS.body,
+    color: '#94a3b8',
+    textAlign: 'center',
+    paddingVertical: 12,
+  },
   subjectRow: {
     marginBottom: 16,
   },

@@ -8,6 +8,7 @@ import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import MCQScreen from './MCQScreen';
 import ChapterDetailScreen from './ChapterDetailScreen';
 import QuizScreen from './QuizScreen';
+import SidebarMenu from './SidebarMenu';
 
 const Stack = createNativeStackNavigator();
 
@@ -127,8 +128,11 @@ const PracticeHome = ({navigation}) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.practiceHeader}>
-        <Text style={styles.practiceTitle}>Practice</Text>
-        <Text style={styles.practiceSubtitle}>Making Practice Fun</Text>
+        <SidebarMenu navigation={navigation} iconColor="#1e4080" />
+        <View style={styles.practiceHeaderContent}>
+          <Text style={styles.practiceTitle}>Practice</Text>
+          <Text style={styles.practiceSubtitle}>Making Practice Fun</Text>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.practiceContent}>
@@ -539,9 +543,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#EBF4FF',
   },
   practiceHeader: {
-    paddingHorizontal: 24,
-    paddingTop: 28,
+    paddingHorizontal: 20,
+    paddingTop: 12,
     paddingBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  practiceHeaderContent: {
+    flex: 1,
+    paddingLeft: 8,
   },
   practiceTitle: {
     fontSize: 28,

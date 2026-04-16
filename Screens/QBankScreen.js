@@ -13,6 +13,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {supabase} from '../lib/supabase';
 import {FONTS, TEXT_COLORS} from '../lib/fonts';
+import SidebarMenu from './SidebarMenu';
 
 const CATEGORIES = [
   {key: 'past_year_papers', label: 'Past year papers'},
@@ -20,7 +21,7 @@ const CATEGORIES = [
 ];
 const FALLBACK_YEARS = ['2023-24', '2022-23', '2021-22', '2020-21'];
 
-const QBankScreen = () => {
+const QBankScreen = ({navigation}) => {
   const [activeCategory, setActiveCategory] = useState(CATEGORIES[0].key);
   const [papers, setPapers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -69,8 +70,11 @@ const QBankScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>QBank</Text>
-        <Text style={styles.subtitle}>Past Year & Sample Papers</Text>
+        <SidebarMenu navigation={navigation} iconColor="#1e4080" />
+        <View style={styles.headerContent}>
+          <Text style={styles.title}>QBank</Text>
+          <Text style={styles.subtitle}>Past Year & Sample Papers</Text>
+        </View>
       </View>
 
       <View style={styles.filterRow}>
@@ -92,7 +96,7 @@ const QBankScreen = () => {
       <ScrollView style={styles.list} contentContainerStyle={styles.listContent}>
         {loading ? (
           <View style={styles.centered}>
-            <ActivityIndicator size="large" color="#4a6a6a" />
+            <ActivityIndicator size="large" color="#1e4080" />
             <Text style={styles.infoText}>Loading papers...</Text>
           </View>
         ) : items.length > 0 ? (
@@ -132,8 +136,14 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 24,
+    paddingTop: 12,
     paddingBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerContent: {
+    flex: 1,
+    paddingLeft: 8,
   },
   title: {
     fontSize: 26,
@@ -236,7 +246,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     fontFamily: FONTS.body,
-    color: '#4a6a6a',
+    color: '#1e4080',
     lineHeight: 18,
   },
   paperCardPlaceholder: {

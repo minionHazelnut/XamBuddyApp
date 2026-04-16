@@ -19,7 +19,6 @@ const FREE_FEATURES = [
       {title: 'Practice MCQs', sub: '30/day · any chapter · with answers + explanations'},
       {title: 'Short answers', sub: '3 chapters free (any subject)'},
       {title: 'Long answers', sub: 'First paragraph of every answer'},
-      {title: 'Question format labels', sub: '1-mark / 3-mark / 5-mark · first 30 Qs'},
     ],
   },
   {

@@ -39,10 +39,10 @@ const ProgressCircle = ({progress}) => {
         style={[
           circleStyles.progressArc,
           {
-            borderTopColor: progress > 0 ? '#4a6a6a' : 'transparent',
-            borderRightColor: progress > 25 ? '#4a6a6a' : 'transparent',
-            borderBottomColor: progress > 50 ? '#4a6a6a' : 'transparent',
-            borderLeftColor: progress > 75 ? '#4a6a6a' : 'transparent',
+            borderTopColor: progress > 0 ? '#1e4080' : 'transparent',
+            borderRightColor: progress > 25 ? '#1e4080' : 'transparent',
+            borderBottomColor: progress > 50 ? '#1e4080' : 'transparent',
+            borderLeftColor: progress > 75 ? '#1e4080' : 'transparent',
             transform: [{rotate: '-45deg'}],
           },
         ]}
@@ -77,7 +77,7 @@ const circleStyles = StyleSheet.create({
   text: {
     fontSize: 11,
     fontFamily: FONTS.bodyBold,
-    color: '#4a6a6a',
+    color: '#1e4080',
   },
   completedBadge: {
     width: 44,
@@ -170,7 +170,7 @@ const MCQScreen = ({navigation}) => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4a6a6a" />
+          <ActivityIndicator size="large" color="#1e4080" />
           <Text style={styles.loadingText}>Loading chapters...</Text>
         </View>
       </SafeAreaView>
@@ -472,6 +472,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 20,
+    paddingTop: 16,
   },
   dropdown: {
     backgroundColor: '#ffffff',
